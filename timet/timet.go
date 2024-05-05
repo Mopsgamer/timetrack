@@ -134,9 +134,10 @@ func String(records []*RecordActed) (string, error) {
 		if err != nil {
 			return "", err
 		}
+		var recordName = colorize(record.Name)
 		var rowSince = colorize(prettyms.Time(rowSinceTime))
 		var rowDate = colorize(recordDate.Format(DateFormatReadable))
-		var row = []string{rowN, record.Name, rowSince, rowDate}
+		var row = []string{rowN, recordName, rowSince, rowDate}
 		rows = append(rows, row)
 
 		// If removed, remove from cloned and decrement index
