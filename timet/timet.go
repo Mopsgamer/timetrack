@@ -1,7 +1,6 @@
 package timet
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -48,6 +47,13 @@ type RecordActed struct {
 	Action string
 }
 
+type RecordFormat struct {
+	Index string
+	Name  string
+	Since string
+	Date  string
+}
+
 const (
 	RowActionNormal  = "normal"
 	RowActionAdded   = "added"
@@ -86,66 +92,79 @@ func ParseFile(path string) (Data, error) {
 	return parsed, nil
 }
 
-func String(records []*RecordActed) (string, error) {
-	// Clone records
-	cloned := make([]*RecordActed, len(records))
-	copy(cloned, records)
+func NewColorizer(action string) func(string) string {
+	color := (map[string]func(string) string{
+		RowActionNormal:  func(s string) string { return s },
+		RowActionAdded:   func(s string) string { return ansi.Color(s, "green+h") },
+		RowActionDeleted: func(s string) string { return ansi.Color(s, "red+h") },
+	}[action])
+	return color
+}
 
-	// Header row
+func (recordAc *RecordActed) Format(recordAcIndex int) (*RecordFormat, error) {
+	recordDate, errRecordDate := time.Parse(DateFormat, recordAc.Since)
+	if errRecordDate != nil {
+		return nil, errRecordDate
+	}
+	colorize := NewColorizer(recordAc.Action)
+	var index string
+	if recordAcIndex < 0 {
+		index = "x"
+	} else {
+		index = fmt.Sprint(recordAcIndex)
+	}
+	index = colorize(index)
+	name := colorize(recordAc.Name)
+	since := colorize(prettyms.Time(recordDate))
+	date := colorize(recordDate.Format(DateFormatReadable))
+
+	return &RecordFormat{
+		Index: index,
+		Name:  name,
+		Since: since,
+		Date:  date,
+	}, nil
+}
+
+func RecordsActedToRows(recordsAc []*RecordActed) ([][]string, error) {
+	rows := [][]string{}
+	rmCount := 0
+	for recordAcIndex, recordAc := range recordsAc {
+		isDeleted := recordAc.Action == RowActionDeleted
+		i := recordAcIndex + 1 - rmCount
+		if isDeleted {
+			i = -1
+			rmCount++
+		}
+		recordFm, err := recordAc.Format(i)
+		if err != nil {
+			return rows, err
+		}
+		rows = append(rows, []string{
+			recordFm.Index,
+			recordFm.Name,
+			recordFm.Since,
+			recordFm.Date,
+		})
+	}
+	return rows, nil
+}
+
+func String(recordsAc []*RecordActed) (string, error) {
+	cloned := make([]*RecordActed, len(recordsAc))
+	copy(cloned, recordsAc)
+
 	head := []string{"#", "Name", "Since", "Date"}
-	rows := [][]string{head}
 	for rowi, row := range head {
 		head[rowi] = ansi.Color(row, "white+u")
 	}
 
-	// Format switch for different actions
-	formatSwitch := map[string]func(string) string{
-		RowActionNormal:  func(s string) string { return s },
-		RowActionAdded:   func(s string) string { return ansi.Color(s, "green+h") }, // green color
-		RowActionDeleted: func(s string) string { return ansi.Color(s, "red+h") },   // red color
+	rows, err := RecordsActedToRows(cloned)
+	if err != nil {
+		return "", err
 	}
 
-	// Iterate over the records
-	for recordIndex := 0; recordIndex < len(cloned); recordIndex++ {
-		record := cloned[recordIndex]
-		if record.Since == "" {
-			record.Since = time.Now().Format(DateFormat)
-		}
-		recordDate, errRecordDate := time.Parse(DateFormat, record.Since)
-		if errRecordDate != nil {
-			return "", errors.New(`invalid date "` + record.Since + `"`)
-		}
-		isRemoved := record.Action == RowActionDeleted
-
-		// Color by action
-		var colorize func(string) string
-		if format, ok := formatSwitch[record.Action]; ok {
-			colorize = format
-		} else {
-			colorize = formatSwitch[RowActionNormal]
-		}
-
-		// Add row
-		var rowN = colorize(fmt.Sprint(recordIndex + 1))
-		if isRemoved {
-			rowN = colorize("x")
-		}
-		rowSinceTime, err := time.Parse(DateFormat, record.Since)
-		if err != nil {
-			return "", err
-		}
-		var recordName = colorize(record.Name)
-		var rowSince = colorize(prettyms.Time(rowSinceTime))
-		var rowDate = colorize(recordDate.Format(DateFormatReadable))
-		var row = []string{rowN, recordName, rowSince, rowDate}
-		rows = append(rows, row)
-
-		// If removed, remove from cloned and decrement index
-		if isRemoved {
-			cloned = append(cloned[:recordIndex], cloned[recordIndex+1:]...)
-			recordIndex--
-		}
-	}
+	rows = append([][]string{head}, rows...)
 
 	return texttable.Make(rows, textTableOptions), nil
 }
