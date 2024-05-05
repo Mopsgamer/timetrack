@@ -136,11 +136,13 @@ func (m *Manager) Create(name string, date string, below bool) (string, error) {
 	}
 	m.DataSaveToFile()
 	recordsFm := timet.FormatRecordList(m.Data.Records)
+	var recordFm *timet.RecordActed
 	if below {
-		recordsFm[0].Action = timet.RowActionAdded
+		recordFm = recordsFm[0]
 	} else {
-		recordsFm[len(recordsFm)-1].Action = timet.RowActionAdded
+		recordFm = recordsFm[len(recordsFm)-1]
 	}
+	recordFm.Action = timet.RowActionAdded
 	return timet.String(recordsFm)
 }
 
