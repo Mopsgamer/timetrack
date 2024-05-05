@@ -118,9 +118,9 @@ func (m *Manager) Create(name string, date string, below bool) (string, error) {
 		return "", errors.New(messageInvalidName)
 	}
 	if date == "" {
-		date = time.Now().Format(timet.DateFormat)
+		date = time.Now().Format(timet.DateFormatReadable)
 	}
-	recordTime, err := time.Parse(timet.DateFormat, date)
+	recordTime, err := time.ParseInLocation(timet.DateFormatReadable, date, time.Local)
 	if err != nil {
 		return "", err
 	}
