@@ -58,7 +58,8 @@ var DefaultData = Data{
 	Records: []*Record{},
 }
 
-const DateFormat string = time.DateTime
+const DateFormatReadable string = time.DateTime
+const DateFormat string = time.RFC3339
 
 func CreateRecord(name string, time time.Time) Record {
 	return Record{Name: name, Since: time.Format(DateFormat)}
@@ -134,7 +135,7 @@ func String(records []*RecordActed) (string, error) {
 			return "", err
 		}
 		var rowSince = colorize(prettyms.Time(rowSinceTime))
-		var rowDate = colorize(recordDate.Format(DateFormat))
+		var rowDate = colorize(recordDate.Format(DateFormatReadable))
 		var row = []string{rowN, record.Name, rowSince, rowDate}
 		rows = append(rows, row)
 

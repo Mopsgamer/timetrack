@@ -6,5 +6,5 @@ import (
 )
 
 func Time(t time.Time) string {
-	return fmt.Sprintf("%f", time.Since(t).Seconds())
+	return fmt.Sprintf("%v", time.Since(t))
 }
