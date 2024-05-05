@@ -68,13 +68,13 @@ func (m *Manager) DataSaveToFile() error {
 	return nil
 }
 
-func (m *Manager) FindRecord(records []*timet.Record, name string) (*timet.Record, error) {
-	for _, v := range records {
-		if glob.MustCompile(name).Match(v.Name) {
-			return v, nil
-		}
+func (m *Manager) FindRecord(records []*timet.Record, name string) *timet.Record {
+	recordIndex := m.FindRecordIndex(records, name)
+	if recordIndex == -1 {
+		return nil
 	}
-	return nil, errors.New(messageNoMatches)
+	record := records[recordIndex]
+	return record
 }
 
 func (m *Manager) FindRecordIndex(records []*timet.Record, name string) int {
@@ -124,8 +124,8 @@ func (m *Manager) Create(name string, date string, below bool) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	_, err = m.FindRecord(m.Data.Records, name)
-	if err == nil {
+	similar := m.FindRecord(m.Data.Records, name)
+	if similar != nil {
 		return "", errors.New(messageExistsName)
 	}
 	record := timet.CreateRecord(name, recordTime)
@@ -151,8 +151,8 @@ func (m *Manager) Remove(name string) (string, error) {
 	if name == "" {
 		name = "**"
 	}
-	_, err := m.FindRecord(m.Data.Records, name)
-	if err != nil {
+	similar := m.FindRecord(m.Data.Records, name)
+	if similar == nil {
 		return "", errors.New(messageNoMatches)
 	}
 	recordsFm := timet.FormatRecordList(m.Data.Records)
