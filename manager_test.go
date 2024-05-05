@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"path/filepath"
 	"testing"
 	"timet/manager"
 	"timet/timet"
@@ -11,16 +12,28 @@ import (
 
 func TestManager(t *testing.T) {
 	check := assert.New(t)
-	t.Run("Limit", func(t *testing.T) {
-		m := manager.New("")
-		for i := range timet.MaxRecords {
-			m.Create(fmt.Sprint(i), "", false)
-		}
-		check.Equal(len(m.Data.Records), timet.MaxRecords)
-		_, errGotLimit := m.Create("?", "", false)
-		check.Error(errGotLimit)
+	t.Run("Data", func(t *testing.T) {
+		t.Run("Virtual Manager", func(t *testing.T) {
+			m := manager.New("")
+			err := m.DataLoadFromFile()
+			check.Error(err)
+		})
+		t.Run("TestDataFile Manager", func(t *testing.T) {
+			m := manager.New(filepath.Join(timet.PathRoot, "data.test.json"))
+			err := m.DataLoadFromFile()
+			check.Error(err)
+		})
 	})
 	t.Run("Actions", func(t *testing.T) {
+		t.Run("Limit", func(t *testing.T) {
+			m := manager.New("")
+			for i := range timet.MaxRecords {
+				m.Create(fmt.Sprint(i), "", false)
+			}
+			check.Equal(len(m.Data.Records), timet.MaxRecords)
+			_, errGotLimit := m.Create("?", "", false)
+			check.Error(errGotLimit)
+		})
 		t.Run("List", func(t *testing.T) {
 			m := manager.New("")
 			_, errListEmpty := m.List("")
@@ -61,6 +74,42 @@ func TestManager(t *testing.T) {
 			m := manager.New("")
 			_, err := m.Reset()
 			check.Nil(err)
+		})
+	})
+	t.Run("Finders", func(t *testing.T) {
+		t.Run("FindRecordAll", func(t *testing.T) {
+			m := manager.New("")
+			check.Equal(len(m.FindRecordAll(nil, "")), 0)
+			m.Create("hello", "", true)
+			m.Create("hell", "", true)
+			check.Equal(len(m.FindRecordAll(m.Data.Records, "hello")), 1)
+			check.Equal(len(m.FindRecordAll(m.Data.Records, "h?l?o")), 1)
+			check.Equal(len(m.FindRecordAll(m.Data.Records, "*o")), 1)
+			check.Equal(len(m.FindRecordAll(m.Data.Records, "h*")), 2)
+			check.Equal(len(m.FindRecordAll(m.Data.Records, "h*o")), 1)
+			check.Equal(len(m.FindRecordAll(m.Data.Records, "h**o")), 1)
+		})
+		t.Run("FindRecordIndex", func(t *testing.T) {
+			m := manager.New("")
+			check.Equal(m.FindRecordIndex(nil, ""), -1)
+			m.Create("hello", "", true)
+			check.Equal(m.FindRecordIndex(m.Data.Records, "hello"), 0)
+			check.Equal(m.FindRecordIndex(m.Data.Records, "h?l?o"), 0)
+			check.Equal(m.FindRecordIndex(m.Data.Records, "*o"), 0)
+			check.Equal(m.FindRecordIndex(m.Data.Records, "h*"), 0)
+			check.Equal(m.FindRecordIndex(m.Data.Records, "h*o"), 0)
+			check.Equal(m.FindRecordIndex(m.Data.Records, "h**o"), 0)
+		})
+		t.Run("FindRecord", func(t *testing.T) {
+			m := manager.New("")
+			check.Nil(m.FindRecord(nil, ""))
+			m.Create("hello", "", true)
+			check.NotNil(m.FindRecord(m.Data.Records, "hello"))
+			check.NotNil(m.FindRecord(m.Data.Records, "h?l?o"))
+			check.NotNil(m.FindRecord(m.Data.Records, "*o"))
+			check.NotNil(m.FindRecord(m.Data.Records, "h*"))
+			check.NotNil(m.FindRecord(m.Data.Records, "h*o"))
+			check.NotNil(m.FindRecord(m.Data.Records, "h**o"))
 		})
 	})
 }
