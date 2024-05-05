@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"testing"
+	"time"
 	"timet/manager"
 	"timet/timet"
 
@@ -13,15 +15,64 @@ import (
 func TestManager(t *testing.T) {
 	check := assert.New(t)
 	t.Run("Data", func(t *testing.T) {
-		t.Run("Virtual Manager", func(t *testing.T) {
+		t.Run("\"\" Manager", func(t *testing.T) {
 			m := manager.New("")
-			err := m.DataLoadFromFile()
-			check.Error(err)
+			errLoad := m.DataLoadFromFile()
+			check.Error(errLoad)
+			errSave := m.DataSaveToFile()
+			check.Error(errSave)
 		})
-		t.Run("TestDataFile Manager", func(t *testing.T) {
-			m := manager.New(filepath.Join(timet.PathRoot, "data.test.json"))
-			err := m.DataLoadFromFile()
-			check.Error(err)
+		t.Run("\"data_abcd.test.json\" Manager", func(t *testing.T) {
+			dataTestFile := filepath.Join(timet.PathRoot, "data_abcd.test.json")
+			defer os.Remove(dataTestFile)
+			m := manager.New(dataTestFile)
+			errLoad := m.DataLoadFromFile()
+			check.Error(errLoad)
+			errSave := m.DataSaveToFile()
+			check.Nil(errSave)
+		})
+		t.Run("\"data.test.json\" Manager", func(t *testing.T) {
+			dataTestFile := filepath.Join(timet.PathRoot, "data.test.json")
+			defer os.Remove(dataTestFile)
+			m := manager.New(dataTestFile)
+
+			testData := []struct {
+				data      string
+				wantError bool
+			}{
+				{
+					data:      `{"Records":[{"Name":"test timestamp","Since":"` + time.Now().Format(timet.DateFormat) + `"}]}`,
+					wantError: false,
+				},
+				{
+					data:      `[]`,
+					wantError: true,
+				},
+				{
+					data:      `{}`,
+					wantError: false,
+				},
+				{
+					data:      `{`,
+					wantError: true,
+				},
+				{
+					data:      ``,
+					wantError: true,
+				},
+			}
+
+			for _, data := range testData {
+				os.WriteFile(dataTestFile, []byte(data.data), 0644)
+				if data.wantError {
+					check.Error(m.DataLoadFromFile())
+					continue
+				}
+				check.Nil(m.DataLoadFromFile())
+			}
+
+			errSave := m.DataSaveToFile()
+			check.Nil(errSave)
 		})
 	})
 	t.Run("Actions", func(t *testing.T) {

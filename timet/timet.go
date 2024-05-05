@@ -84,9 +84,9 @@ func ParseFile(path string) (Data, error) {
 		return DefaultData, err
 	}
 	var parsed Data
-	err = json.Unmarshal(data, &parsed)
-	if err != nil {
-		return DefaultData, err
+	errParse := json.Unmarshal(data, &parsed)
+	if errParse != nil {
+		return DefaultData, errParse
 	}
 	return parsed, nil
 }

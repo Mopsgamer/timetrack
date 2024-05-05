@@ -61,9 +61,9 @@ func (m *Manager) DataSaveToFile() error {
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile(m.Path, str, 0644)
-	if err != nil {
-		return err
+	errWrite := os.WriteFile(m.Path, str, 0644)
+	if errWrite != nil {
+		return errWrite
 	}
 	return nil
 }
