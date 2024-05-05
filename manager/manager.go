@@ -138,9 +138,9 @@ func (m *Manager) Create(name string, date string, below bool) (string, error) {
 	recordsFm := timet.FormatRecordList(m.Data.Records)
 	var recordFm *timet.RecordActed
 	if below {
-		recordFm = recordsFm[0]
-	} else {
 		recordFm = recordsFm[len(recordsFm)-1]
+	} else {
+		recordFm = recordsFm[0]
 	}
 	recordFm.Action = timet.RowActionAdded
 	return timet.String(recordsFm)
