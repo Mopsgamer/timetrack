@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"time"
-	"timet/prettyms"
 	"timet/texttable"
 
 	"encoding/json"
@@ -115,7 +114,7 @@ func (recordAc *RecordActed) Format(recordAcIndex int) (*RecordFormat, error) {
 	}
 	index = colorize(index)
 	name := colorize(recordAc.Name)
-	since := colorize(prettyms.Time(recordDate))
+	since := colorize(fmt.Sprintf("%v", time.Since(recordDate)))
 	date := colorize(recordDate.Format(DateFormatReadable))
 
 	return &RecordFormat{
