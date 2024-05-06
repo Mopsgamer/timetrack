@@ -52,6 +52,20 @@ func TestTimet(t *testing.T) {
 		check.Equal(MakeColorizer(RecordActionAdded)(text), ansi.ColorFunc("green+h")(text))
 		check.Equal(MakeColorizer(RecordActionDeleted)(text), ansi.ColorFunc("red+h")(text))
 	})
+	t.Run("RecordsActedToRows", func(t *testing.T) {
+		_, errNil := RecordsActedToRows(nil)
+		check.Error(errNil)
+		_, errNilElem := RecordsActedToRows([]*RecordActed{nil})
+		check.Error(errNilElem)
+		_, errWhenValid := RecordsActedToRows([]*RecordActed{MakeRecordActed(MakeRecord("2", time.Now()))})
+		check.Nil(errWhenValid)
+	})
+	t.Run("String", func(t *testing.T) {
+		rows := []*RecordActed{MakeRecordActed(MakeRecord("2", time.Now()))}
+		str, errConvert := String(rows)
+		check.Nil(errConvert)
+		check.NotEqual(str, "")
+	})
 	t.Run("ParseFile", func(t *testing.T) {
 		dataTestFile := filepath.Join(PathRoot, "parsefile.test.json")
 		defer os.Remove(dataTestFile)

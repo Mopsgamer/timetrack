@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"timet/manager"
 	"timet/timet"
 
@@ -30,8 +29,7 @@ var RootCmd = &cobra.Command{
 
 func ProcessAction(message string, err error) {
 	if err != nil {
-		fmt.Printf("%v", err)
-		os.Exit(1)
+		panic(err)
 	}
 	fmt.Printf("%s", message)
 }

@@ -142,7 +142,13 @@ func MakeColorizer(action string) func(string) string {
 func RecordsActedToRows(recordsAc []*RecordActed) ([][]string, error) {
 	rows := [][]string{}
 	rmCount := 0
+	if recordsAc == nil {
+		return nil, errors.New("bad list")
+	}
 	for recordAcIndex, recordAc := range recordsAc {
+		if recordAc == nil {
+			return nil, errors.New("bad record")
+		}
 		isDeleted := recordAc.Action == RecordActionDeleted
 		i := recordAcIndex + 1 - rmCount
 		if isDeleted {
@@ -151,7 +157,7 @@ func RecordsActedToRows(recordsAc []*RecordActed) ([][]string, error) {
 		}
 		recordFm := MakeRecordFormat(recordAc, i)
 		if recordFm == nil {
-			return rows, errors.New("bad record, can not format")
+			return nil, errors.New("bad record, can not format")
 		}
 		rows = append(rows, []string{
 			recordFm.Index,
