@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"timet/manager"
-	"timet/timet"
+
+	"github.com/mopsgamer/timetrack/manager"
+	"github.com/mopsgamer/timetrack/timet"
 
 	"github.com/spf13/cobra"
 )

@@ -6,7 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
-	"timet/texttable"
+
+	"github.com/mopsgamer/timetrack/texttable"
 
 	"encoding/json"
 

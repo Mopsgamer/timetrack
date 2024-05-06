@@ -6,7 +6,8 @@ import (
 	"fmt"
 	"os"
 	"time"
-	"timet/timet"
+
+	"github.com/mopsgamer/timetrack/timet"
 
 	"github.com/gobwas/glob"
 )

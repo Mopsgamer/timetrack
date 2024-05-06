@@ -6,7 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
-	"timet/timet"
+
+	"github.com/mopsgamer/timetrack/timet"
 
 	"github.com/stretchr/testify/assert"
 )
