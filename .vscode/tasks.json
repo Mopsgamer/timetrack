@@ -1,0 +1,41 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "go",
+			"icon": {
+				"id": "check-all"
+			},
+			"detail": "go test -coverprofile=\"c.out\" ${workspaceFolder}/...",
+			"label": "Test all",
+			"command": "test",
+			"args": [
+				"-coverprofile=\"c.out\"",
+				"${workspaceFolder}/..."
+			],
+			"problemMatcher": [
+				"$go"
+			],
+			"group": "test"
+		},
+		{
+			"type": "go",
+			"icon": {
+				"id": "package"
+			},
+			"detail": "go build ${workspaceFolder}",
+			"label": "Build",
+			"command": "build",
+			"args": [
+				"${workspaceFolder}"
+			],
+			"problemMatcher": [
+				"$go"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+		}
+	]
+}
