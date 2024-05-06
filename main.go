@@ -16,7 +16,7 @@ const (
 	descrBelow      = `add once from below, not from above`
 	descrGlobFirst  = `glob pattern string. the first record on top. see https://pkg.go.dev/github.com/gobwas/glob#Compile`
 	descrGlobSet    = `glob pattern string. set of records. see https://pkg.go.dev/github.com/gobwas/glob#Compile`
-	descrDate       = `date time string. example: '` + timet.DateFormat + `'.`
+	descrDate       = `date time string. example: '` + timet.DateFormatReadable + `'.`
 )
 
 var DefaultManager = manager.New(timet.PathData)
