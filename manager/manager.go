@@ -107,7 +107,7 @@ func (m *Manager) List(name string) (string, error) {
 	if len(recordsF) == 0 {
 		return "", errors.New(messageNoMatches)
 	}
-	return timet.String(timet.FormatRecordList(m.Data.Records))
+	return timet.String(timet.MakeRecordActedList(m.Data.Records))
 }
 
 func (m *Manager) Create(name string, date string, below bool) (string, error) {
@@ -128,21 +128,21 @@ func (m *Manager) Create(name string, date string, below bool) (string, error) {
 	if similar != nil {
 		return "", errors.New(messageExistsName)
 	}
-	record := timet.CreateRecord(name, recordTime)
+	record := timet.MakeRecord(name, recordTime)
 	if below {
-		m.Data.Records = append(m.Data.Records, &record)
+		m.Data.Records = append(m.Data.Records, record)
 	} else {
-		m.Data.Records = append([]*timet.Record{&record}, m.Data.Records...)
+		m.Data.Records = append([]*timet.Record{record}, m.Data.Records...)
 	}
 	m.DataSaveToFile()
-	recordsFm := timet.FormatRecordList(m.Data.Records)
+	recordsFm := timet.MakeRecordActedList(m.Data.Records)
 	var recordFm *timet.RecordActed
 	if below {
 		recordFm = recordsFm[len(recordsFm)-1]
 	} else {
 		recordFm = recordsFm[0]
 	}
-	recordFm.Action = timet.RowActionAdded
+	recordFm.Action = timet.RecordActionAdded
 	return timet.String(recordsFm)
 }
 
@@ -157,14 +157,14 @@ func (m *Manager) Remove(name string) (string, error) {
 	if similar == nil {
 		return "", errors.New(messageNoMatches)
 	}
-	recordsFm := timet.FormatRecordList(m.Data.Records)
+	recordsFm := timet.MakeRecordActedList(m.Data.Records)
 	var counterRm = 0 // needed for right painting
 	for {
 		recordIndexRm := m.FindRecordIndex(m.Data.Records, name)
 		if recordIndexRm < 0 {
 			break
 		}
-		recordsFm[recordIndexRm+counterRm].Action = timet.RowActionDeleted
+		recordsFm[recordIndexRm+counterRm].Action = timet.RecordActionDeleted
 		// remove el by index (recordIndexRm)
 		m.Data.Records = append(m.Data.Records[:recordIndexRm], m.Data.Records[recordIndexRm+1:]...)
 		counterRm++

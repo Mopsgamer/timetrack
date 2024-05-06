@@ -1,4 +1,4 @@
-package main
+package manager
 
 import (
 	"fmt"
@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
-	"timet/manager"
 	"timet/timet"
 
 	"github.com/stretchr/testify/assert"
@@ -16,7 +15,7 @@ func TestManager(t *testing.T) {
 	check := assert.New(t)
 	t.Run("Data", func(t *testing.T) {
 		t.Run("\"\" Manager", func(t *testing.T) {
-			m := manager.New("")
+			m := New("")
 			errLoad := m.DataLoadFromFile()
 			check.Error(errLoad)
 			errSave := m.DataSaveToFile()
@@ -25,7 +24,7 @@ func TestManager(t *testing.T) {
 		t.Run("\"data_abcd.test.json\" Manager", func(t *testing.T) {
 			dataTestFile := filepath.Join(timet.PathRoot, "data_abcd.test.json")
 			defer os.Remove(dataTestFile)
-			m := manager.New(dataTestFile)
+			m := New(dataTestFile)
 			errLoad := m.DataLoadFromFile()
 			check.Error(errLoad)
 			errSave := m.DataSaveToFile()
@@ -34,7 +33,7 @@ func TestManager(t *testing.T) {
 		t.Run("\"data.test.json\" Manager", func(t *testing.T) {
 			dataTestFile := filepath.Join(timet.PathRoot, "data.test.json")
 			defer os.Remove(dataTestFile)
-			m := manager.New(dataTestFile)
+			m := New(dataTestFile)
 
 			testData := []struct {
 				data      string
@@ -77,7 +76,7 @@ func TestManager(t *testing.T) {
 	})
 	t.Run("Actions", func(t *testing.T) {
 		t.Run("Limit", func(t *testing.T) {
-			m := manager.New("")
+			m := New("")
 			for i := range timet.MaxRecords {
 				m.Create(fmt.Sprint(i), "", false)
 			}
@@ -86,7 +85,7 @@ func TestManager(t *testing.T) {
 			check.Error(errGotLimit)
 		})
 		t.Run("List", func(t *testing.T) {
-			m := manager.New("")
+			m := New("")
 			_, errListEmpty := m.List("")
 			check.Nil(errListEmpty)
 			m.Create("test", "", false)
@@ -96,7 +95,7 @@ func TestManager(t *testing.T) {
 			check.Nil(errListSingle)
 		})
 		t.Run("Create", func(t *testing.T) {
-			m := manager.New("")
+			m := New("")
 			_, errName := m.Create("", "", false)
 			check.Error(errName)
 			_, errNoDate := m.Create("no date above", "", false)
@@ -113,7 +112,7 @@ func TestManager(t *testing.T) {
 			check.Equal(m.Data.Records[0].Name, "above")
 		})
 		t.Run("Remove", func(t *testing.T) {
-			m := manager.New("")
+			m := New("")
 			_, errRmEmpty := m.Remove("")
 			check.Nil(errRmEmpty)
 			m.Create("test", "", false)
@@ -122,14 +121,14 @@ func TestManager(t *testing.T) {
 			check.Equal(len(m.Data.Records), 0)
 		})
 		t.Run("Reset", func(t *testing.T) {
-			m := manager.New("")
+			m := New("")
 			_, err := m.Reset()
 			check.Nil(err)
 		})
 	})
 	t.Run("Finders", func(t *testing.T) {
 		t.Run("FindRecordAll", func(t *testing.T) {
-			m := manager.New("")
+			m := New("")
 			check.Equal(len(m.FindRecordAll(nil, "")), 0)
 			m.Create("hello", "", true)
 			m.Create("hell", "", true)
@@ -141,7 +140,7 @@ func TestManager(t *testing.T) {
 			check.Equal(len(m.FindRecordAll(m.Data.Records, "h**o")), 1)
 		})
 		t.Run("FindRecordIndex", func(t *testing.T) {
-			m := manager.New("")
+			m := New("")
 			check.Equal(m.FindRecordIndex(nil, ""), -1)
 			m.Create("hello", "", true)
 			check.Equal(m.FindRecordIndex(m.Data.Records, "hello"), 0)
@@ -152,7 +151,7 @@ func TestManager(t *testing.T) {
 			check.Equal(m.FindRecordIndex(m.Data.Records, "h**o"), 0)
 		})
 		t.Run("FindRecord", func(t *testing.T) {
-			m := manager.New("")
+			m := New("")
 			check.Nil(m.FindRecord(nil, ""))
 			m.Create("hello", "", true)
 			check.NotNil(m.FindRecord(m.Data.Records, "hello"))

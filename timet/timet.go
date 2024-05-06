@@ -1,6 +1,7 @@
 package timet
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -54,9 +55,9 @@ type RecordFormat struct {
 }
 
 const (
-	RowActionNormal  = "normal"
-	RowActionAdded   = "added"
-	RowActionDeleted = "deleted"
+	RecordActionNormal  = "normal"
+	RecordActionAdded   = "added"
+	RecordActionDeleted = "deleted"
 )
 
 var DefaultData = Data{
@@ -66,46 +67,37 @@ var DefaultData = Data{
 const DateFormatReadable string = time.DateTime
 const DateFormat string = time.RFC3339
 
-func CreateRecord(name string, time time.Time) Record {
-	return Record{Name: name, Since: time.Format(DateFormat)}
+func MakeRecord(name string, time time.Time) *Record {
+	if name == "" {
+		return nil
+	}
+	return &Record{Name: name, Since: time.Format(DateFormat)}
 }
 
-func FormatRecordList(records []*Record) []*RecordActed {
+func MakeRecordActed(record *Record) *RecordActed {
+	if record == nil {
+		return nil
+	}
+	return &RecordActed{Record: record, Action: RecordActionNormal}
+}
+
+func MakeRecordActedList(records []*Record) []*RecordActed {
 	recordsFm := make([]*RecordActed, len(records))
 	for reci, rec := range records {
-		recordsFm[reci] = &RecordActed{Record: rec, Action: RowActionNormal}
+		recordsFm[reci] = MakeRecordActed(rec)
 	}
 	return recordsFm
 }
 
-func ParseFile(path string) (Data, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return DefaultData, err
+func MakeRecordFormat(recordAc *RecordActed, recordAcIndex int) *RecordFormat {
+	if recordAc == nil {
+		return nil
 	}
-	var parsed Data
-	errParse := json.Unmarshal(data, &parsed)
-	if errParse != nil {
-		return DefaultData, errParse
-	}
-	return parsed, nil
-}
-
-func NewColorizer(action string) func(string) string {
-	color := (map[string]func(string) string{
-		RowActionNormal:  func(s string) string { return s },
-		RowActionAdded:   func(s string) string { return ansi.Color(s, "green+h") },
-		RowActionDeleted: func(s string) string { return ansi.Color(s, "red+h") },
-	}[action])
-	return color
-}
-
-func (recordAc *RecordActed) Format(recordAcIndex int) (*RecordFormat, error) {
 	recordDate, errRecordDate := time.Parse(DateFormat, recordAc.Since)
 	if errRecordDate != nil {
-		return nil, errRecordDate
+		return nil
 	}
-	colorize := NewColorizer(recordAc.Action)
+	colorize := MakeColorizer(recordAc.Action)
 	var index string
 	if recordAcIndex < 0 {
 		index = "x"
@@ -122,22 +114,44 @@ func (recordAc *RecordActed) Format(recordAcIndex int) (*RecordFormat, error) {
 		Name:  name,
 		Since: since,
 		Date:  date,
-	}, nil
+	}
+}
+
+func ParseFile(path string) (Data, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return DefaultData, err
+	}
+	var parsed Data
+	errParse := json.Unmarshal(data, &parsed)
+	if errParse != nil {
+		return DefaultData, errParse
+	}
+	return parsed, nil
+}
+
+func MakeColorizer(action string) func(string) string {
+	color := ansi.ColorFunc(map[string]string{
+		RecordActionNormal:  "white",
+		RecordActionAdded:   "green+h",
+		RecordActionDeleted: "red+h",
+	}[action])
+	return color
 }
 
 func RecordsActedToRows(recordsAc []*RecordActed) ([][]string, error) {
 	rows := [][]string{}
 	rmCount := 0
 	for recordAcIndex, recordAc := range recordsAc {
-		isDeleted := recordAc.Action == RowActionDeleted
+		isDeleted := recordAc.Action == RecordActionDeleted
 		i := recordAcIndex + 1 - rmCount
 		if isDeleted {
 			i = -1
 			rmCount++
 		}
-		recordFm, err := recordAc.Format(i)
-		if err != nil {
-			return rows, err
+		recordFm := MakeRecordFormat(recordAc, i)
+		if recordFm == nil {
+			return rows, errors.New("bad record, can not format")
 		}
 		rows = append(rows, []string{
 			recordFm.Index,
