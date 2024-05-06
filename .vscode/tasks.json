@@ -6,11 +6,11 @@
 			"icon": {
 				"id": "check-all"
 			},
-			"detail": "go test -coverprofile=\"c.out\" ${workspaceFolder}/...",
+			"detail": "go test -coverprofile=\"./out/c.out\" ${workspaceFolder}/...",
 			"label": "Test all",
 			"command": "test",
 			"args": [
-				"-coverprofile=\"c.out\"",
+				"-coverprofile=\"./out/c.out\"",
 				"${workspaceFolder}/..."
 			],
 			"problemMatcher": [
