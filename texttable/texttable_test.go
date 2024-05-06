@@ -13,7 +13,7 @@ func TestTextTable(t *testing.T) {
 	t2Rows := Make([][]string{{"11", "12"}, {"21 hello", "22 h"}}, TextTableOptions{})
 	check.Equal("      11    12\n21 hello  22 h", t2Rows)
 	tWithParams := Make([][]string{{"11", "12"}, {"21 hello", "22 h"}}, TextTableOptions{AlignH: []int{AlignLeft, AlignRight}})
-	check.Equal("11            12\n21 hello    22 h", tWithParams)
+	check.Equal("11          12\n21 hello  22 h", tWithParams)
 	tPartial := Make([][]string{{"11"}, {"21 hello", "22 h"}}, TextTableOptions{})
 	check.Equal("      11\n21 hello  22 h", tPartial)
 }

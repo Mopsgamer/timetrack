@@ -16,13 +16,17 @@ type TextTableOptions struct {
 	StringLength func(string) int
 }
 
-func Make(rows [][]string, options TextTableOptions) string {
-	stringLength := options.StringLength
-	if stringLength == nil {
-		stringLength = func(s string) int { return len(stripansi.Strip(s)) }
+func ColumnFit(cell string, fitSize int, stringLength func(string) int, alignH int) string {
+	colLen := stringLength(cell)
+	padSize := fitSize - colLen
+	pad := strings.Repeat(" ", padSize)
+	if alignH == AlignLeft {
+		return cell + pad
 	}
-	alignListH := options.AlignH
-	result := ""
+	return pad + cell
+}
+
+func ColumnMaxSizes(rows [][]string, stringLength func(string) int) []int {
 	colSizes := make([]int, len(rows[0]))
 	for _, row := range rows {
 		for i, col := range row {
@@ -34,27 +38,26 @@ func Make(rows [][]string, options TextTableOptions) string {
 			}
 		}
 	}
+	return colSizes
+}
+
+func Make(rows [][]string, options TextTableOptions) string {
+	stringLength := options.StringLength
+	if stringLength == nil {
+		stringLength = func(s string) int { return len(stripansi.Strip(s)) }
+	}
+	alignListH := options.AlignH
+	result := ""
+	colSizes := ColumnMaxSizes(rows, stringLength)
 	for rowi, row := range rows {
-		for coli, col := range row {
-			colLen := stringLength(col)
+		for coli, cell := range row {
 			var alignH int = AlignRight
 			if alignListH != nil && coli < len(alignListH) {
 				alignH = alignListH[coli]
 			}
-			if alignH == AlignLeft {
-				padSize := colSizes[coli] - colLen
-				if coli < len(row)-1 {
-					padSize += 2
-				}
-				pad := strings.Repeat(" ", padSize)
-				result += col + pad
-			} else if alignH == AlignRight {
-				padSize := colSizes[coli] - colLen
-				if coli > 0 {
-					padSize += 2
-				}
-				pad := strings.Repeat(" ", padSize)
-				result += pad + col
+			result += ColumnFit(cell, colSizes[coli], stringLength, alignH)
+			if coli < len(row)-1 {
+				result += "  "
 			}
 		}
 		if rowi < len(rows)-1 {
