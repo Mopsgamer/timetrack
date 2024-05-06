@@ -6,11 +6,11 @@
 			"icon": {
 				"id": "check-all"
 			},
-			"detail": "go test -coverprofile=\"c.out\" ${workspaceFolder}/...",
+			"detail": "go test -coverprofile=\"./out/c.out\" ${workspaceFolder}/...",
 			"label": "Test all",
 			"command": "test",
 			"args": [
-				"-coverprofile=\"c.out\"",
+				"-coverprofile=\"./out/c.out\"",
 				"${workspaceFolder}/..."
 			],
 			"problemMatcher": [
@@ -27,7 +27,9 @@
 			"label": "Build",
 			"command": "build",
 			"args": [
-				"${workspaceFolder}"
+				"-v",
+				"-o=./out/timet.exe",
+				"${workspaceFolder}",
 			],
 			"problemMatcher": [
 				"$go"
