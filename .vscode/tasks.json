@@ -2,42 +2,85 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"type": "go",
-			"icon": {
-				"id": "check-all"
+			"label": "test + coverage file",
+			"detail": "test all, generate coverage file: go test -coverprofile=\"./out/c.out\"",
+			"command": "go test -coverprofile=\"./out/c.out\"",
+			"windows": {
+				"command": "go test -coverprofile=\".\\out\\c.out\"",
 			},
-			"detail": "go test -coverprofile=\"./out/c.out\" ${workspaceFolder}/...",
-			"label": "Test all",
-			"command": "test",
-			"args": [
-				"-coverprofile=\"./out/c.out\"",
-				"${workspaceFolder}/..."
-			],
-			"problemMatcher": [
-				"$go"
-			],
-			"group": "test"
+			"presentation": {
+				"group": "testing"
+			},
+			"type": "shell",
+			"group": "test",
+			"icon": {
+				"id": "check-all",
+				"color": "terminal.ansiGreen"
+			},
 		},
 		{
-			"type": "go",
+			"label": "test coverage",
+			"detail": "show coverage profile summary: go tool cover -func=\"./out/c.out\"",
+			"command": "go tool cover -func=\"./out/c.out\"",
+			"windows": {
+				"command": "go tool cover -func=\".\\out\\c.out\"",
+			},
+			"presentation": {
+				"group": "testing"
+			},
+			"type": "shell",
+			"group": "test",
 			"icon": {
-				"id": "package"
+				"id": "coverage",
+				"color": "terminal.ansiGreen"
 			},
-			"detail": "go build ${workspaceFolder}",
-			"label": "Build",
-			"command": "build",
-			"args": [
-				"-v",
-				"-o=./out/timet.exe",
-				"${workspaceFolder}",
-			],
-			"problemMatcher": [
-				"$go"
-			],
-			"group": {
-				"kind": "build",
-				"isDefault": true
+		},
+		{
+			"label": "build",
+			"detail": "build for current machine: go build -v -o=\"./out/timet.exe\"",
+			"command": "go build -v -o=\"./out/timet.exe\"",
+			"windows": {
+				"command": "go build -v -o=\".\\out\\timet.exe\""
 			},
-		}
+			"presentation": {
+				"group": "building",
+				"reveal": "silent"
+			},
+			"type": "shell",
+			"group": "build",
+			"icon": {
+				"id": "package",
+				"color": "terminal.ansiCyan"
+			},
+		},
+		{
+			"label": "install",
+			"detail": "compile and install globally: go install",
+			"command": "go install",
+			"presentation": {
+				"group": "building",
+				"reveal": "silent"
+			},
+			"type": "shell",
+			"group": "build",
+			"icon": {
+				"id": "desktop-download",
+				"color": "terminal.ansiCyan"
+			},
+		},
+		{
+			"label": "test install",
+			"detail": "test global installation by checking version: timet -v",
+			"command": "timet -v",
+			"presentation": {
+				"group": "testing",
+			},
+			"type": "shell",
+			"group": "build",
+			"icon": {
+				"id": "desktop-download",
+				"color": "terminal.ansiGreen"
+			},
+		},
 	]
 }
