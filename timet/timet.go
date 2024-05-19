@@ -171,15 +171,12 @@ func RecordsActedToRows(recordsAc []*RecordActed) ([][]string, error) {
 }
 
 func String(recordsAc []*RecordActed) (string, error) {
-	cloned := make([]*RecordActed, len(recordsAc))
-	copy(cloned, recordsAc)
-
 	head := []string{"#", "Name", "Since", "Date"}
 	for rowi, row := range head {
 		head[rowi] = ansi.Color(row, "white+u")
 	}
 
-	rows, err := RecordsActedToRows(cloned)
+	rows, err := RecordsActedToRows(recordsAc)
 	if err != nil {
 		return "", err
 	}
