@@ -2,12 +2,12 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"label": "test + coverage file",
-			"detail": "test all, generate coverage file: go test -coverprofile=\"./out/c.out\"",
-			"command": "go test -coverprofile=\"./out/c.out\"",
-			"windows": {
-				"command": "go test -coverprofile=\".\\out\\c.out\"",
+			"options": {
+				"cwd": "${workspaceFolder}"
 			},
+			"label": "test + coverage file",
+			"detail": "test all, generate coverage file: go test -coverprofile='./out/c.out'",
+			"command": "go test -coverprofile='./out/c.out'",
 			"presentation": {
 				"group": "testing"
 			},
@@ -19,12 +19,10 @@
 			},
 		},
 		{
-			"label": "test coverage",
-			"detail": "show coverage profile summary: go tool cover -func=\"./out/c.out\"",
-			"command": "go tool cover -func=\"./out/c.out\"",
-			"windows": {
-				"command": "go tool cover -func=\".\\out\\c.out\"",
-			},
+			"label": "test coverage view",
+			"detail": "show coverage profile summary: go tool cover -func='./out/c.out'",
+			"command": "go tool cover -func='./out/c.out'",
+			"dependsOn":["test + coverage file"],
 			"presentation": {
 				"group": "testing"
 			},
@@ -37,14 +35,10 @@
 		},
 		{
 			"label": "build",
-			"detail": "build for current machine: go build -v -o=\"./out/timet.exe\"",
-			"command": "go build -v -o=\"./out/timet.exe\"",
-			"windows": {
-				"command": "go build -v -o=\".\\out\\timet.exe\""
-			},
+			"detail": "build for current machine: go build -v -o='./out/timet.exe'",
+			"command": "go build -v -o='./out/timet.exe'",
 			"presentation": {
 				"group": "building",
-				"reveal": "silent"
 			},
 			"type": "shell",
 			"group": "build",
@@ -59,7 +53,6 @@
 			"command": "go install",
 			"presentation": {
 				"group": "building",
-				"reveal": "silent"
 			},
 			"type": "shell",
 			"group": "build",
