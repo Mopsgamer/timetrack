@@ -19,31 +19,17 @@ func TestTimet(t *testing.T) {
 		record = MakeRecord("test", now)
 		check.NotNil(record)
 	})
-	t.Run("MakeRecordActed", func(t *testing.T) {
-		now := time.Now()
-		recordAc := MakeRecordActed(MakeRecord("", now))
-		check.Nil(recordAc)
-		recordAc = MakeRecordActed(MakeRecord("test", now))
-		check.NotNil(recordAc)
-	})
 	t.Run("MakeRecordActedList", func(t *testing.T) {
 		now := time.Now()
-		MakeRecordActedList([]*Record{
-			MakeRecord("", now),
-		})
-		MakeRecordActedList([]*Record{
-			MakeRecord("test", now),
-		})
-		MakeRecordActedList([]*Record{
-			MakeRecord("", now),
-			MakeRecord("test", now),
+		MakeRecordActedList([]Record{
+			*MakeRecord("test", now),
 		})
 	})
 	t.Run("MakeRecordFormat", func(t *testing.T) {
 		now := time.Now()
-		recordFm := MakeRecordFormat(MakeRecordActed(MakeRecord("", now)), -1)
+		recordFm := MakeRecord("", now).Format(-1)
 		check.Nil(recordFm)
-		recordFm = MakeRecordFormat(MakeRecordActed(MakeRecord("test", now)), -1)
+		recordFm = MakeRecord("test", now).Format(-1)
 		check.NotNil(recordFm)
 	})
 	t.Run("MakeColorizer", func(t *testing.T) {
@@ -53,15 +39,20 @@ func TestTimet(t *testing.T) {
 		check.Equal(MakeColorizer(RecordActionDeleted)(text), ansi.ColorFunc("red+h")(text))
 	})
 	t.Run("RecordsActedToRows", func(t *testing.T) {
-		_, errNil := RecordsActedToRows(nil)
+		_, errNil := StringRows(nil)
 		check.Error(errNil)
-		_, errNilElem := RecordsActedToRows([]*RecordActed{nil})
+		_, errNilElem := StringRows([]IRowFormatable{nil})
 		check.Error(errNilElem)
-		_, errWhenValid := RecordsActedToRows([]*RecordActed{MakeRecordActed(MakeRecord("2", time.Now()))})
+		r := MakeRecord("2", time.Now())
+		_, errWhenValid := StringRows([]IRowFormatable{r})
 		check.Nil(errWhenValid)
 	})
 	t.Run("String", func(t *testing.T) {
-		rows := []*RecordActed{MakeRecordActed(MakeRecord("2", time.Now()))}
+		recordsFm := MakeRecordActedList([]Record{*MakeRecord("2", time.Now())})
+		rows := make([]IRowFormatable, len(recordsFm))
+		for i, v := range recordsFm {
+			rows[i] = &v
+		}
 		str, errConvert := String(rows)
 		check.Nil(errConvert)
 		check.NotEqual(str, "")

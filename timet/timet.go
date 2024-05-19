@@ -35,7 +35,7 @@ var textTableOptions = texttable.TextTableOptions{
 }
 
 type Data struct {
-	Records []*Record
+	Records []Record
 }
 
 type Record struct {
@@ -55,6 +55,11 @@ type RecordFormat struct {
 	Date  string
 }
 
+type IRowFormatable interface {
+	GetAction() string
+	Format(index int) *RecordFormat
+}
+
 const (
 	RecordActionNormal  = "normal"
 	RecordActionAdded   = "added"
@@ -62,7 +67,7 @@ const (
 )
 
 var DefaultData = Data{
-	Records: []*Record{},
+	Records: []Record{},
 }
 
 const DateFormatReadable string = time.DateTime
@@ -75,38 +80,39 @@ func MakeRecord(name string, time time.Time) *Record {
 	return &Record{Name: name, Since: time.Format(DateFormat)}
 }
 
-func MakeRecordActed(record *Record) *RecordActed {
-	if record == nil {
-		return nil
-	}
-	return &RecordActed{Record: record, Action: RecordActionNormal}
-}
-
-func MakeRecordActedList(records []*Record) []*RecordActed {
-	recordsFm := make([]*RecordActed, len(records))
+func MakeRecordActedList(records []Record) []RecordActed {
+	recordsFm := make([]RecordActed, len(records))
 	for reci, rec := range records {
-		recordsFm[reci] = MakeRecordActed(rec)
+		recordsFm[reci] = RecordActed{Record: &rec, Action: rec.GetAction()}
 	}
 	return recordsFm
 }
 
-func MakeRecordFormat(recordAc *RecordActed, recordAcIndex int) *RecordFormat {
-	if recordAc == nil {
+func (record *RecordActed) GetAction() string {
+	return record.Action
+}
+
+func (record *Record) GetAction() string {
+	return RecordActionNormal
+}
+
+func (record *Record) Format(recordIndex int) *RecordFormat {
+	if record == nil {
 		return nil
 	}
-	recordDate, errRecordDate := time.Parse(DateFormat, recordAc.Since)
+	recordDate, errRecordDate := time.Parse(DateFormat, record.Since)
 	if errRecordDate != nil {
 		return nil
 	}
-	colorize := MakeColorizer(recordAc.Action)
+	colorize := MakeColorizer(record.GetAction())
 	var index string
-	if recordAcIndex < 0 {
+	if recordIndex < 0 {
 		index = "x"
 	} else {
-		index = fmt.Sprint(recordAcIndex)
+		index = fmt.Sprint(recordIndex)
 	}
 	index = colorize(index)
-	name := colorize(recordAc.Name)
+	name := colorize(record.Name)
 	since := colorize(fmt.Sprintf("%v", time.Since(recordDate)))
 	date := colorize(recordDate.Format(DateFormatReadable))
 
@@ -140,26 +146,23 @@ func MakeColorizer(action string) func(string) string {
 	return color
 }
 
-func RecordsActedToRows(recordsAc []*RecordActed) ([][]string, error) {
+func StringRows(formatableList []IRowFormatable) ([][]string, error) {
 	rows := [][]string{}
 	rmCount := 0
-	if recordsAc == nil {
+	if formatableList == nil {
 		return nil, errors.New("bad list")
 	}
-	for recordAcIndex, recordAc := range recordsAc {
-		if recordAc == nil {
+	for formatableIndex, formatable := range formatableList {
+		if formatable == nil {
 			return nil, errors.New("bad record")
 		}
-		isDeleted := recordAc.Action == RecordActionDeleted
-		i := recordAcIndex + 1 - rmCount
+		isDeleted := formatable.GetAction() == RecordActionDeleted
+		i := formatableIndex + 1 - rmCount
 		if isDeleted {
 			i = -1
 			rmCount++
 		}
-		recordFm := MakeRecordFormat(recordAc, i)
-		if recordFm == nil {
-			return nil, errors.New("bad record, can not format")
-		}
+		recordFm := formatable.Format(i)
 		rows = append(rows, []string{
 			recordFm.Index,
 			recordFm.Name,
@@ -170,13 +173,13 @@ func RecordsActedToRows(recordsAc []*RecordActed) ([][]string, error) {
 	return rows, nil
 }
 
-func String(recordsAc []*RecordActed) (string, error) {
+func String(rowFormatableList []IRowFormatable) (string, error) {
 	head := []string{"#", "Name", "Since", "Date"}
 	for rowi, row := range head {
 		head[rowi] = ansi.Color(row, "white+u")
 	}
 
-	rows, err := RecordsActedToRows(recordsAc)
+	rows, err := StringRows(rowFormatableList)
 	if err != nil {
 		return "", err
 	}

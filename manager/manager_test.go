@@ -125,6 +125,11 @@ func TestManager(t *testing.T) {
 			m := New("")
 			_, err := m.Reset()
 			check.Nil(err)
+			dataTestFile := filepath.Join(timet.PathRoot, "data.test.json")
+			defer os.Remove(dataTestFile)
+			m2 := New(dataTestFile)
+			_, err2 := m2.Reset()
+			check.Nil(err2)
 		})
 	})
 	t.Run("Finders", func(t *testing.T) {

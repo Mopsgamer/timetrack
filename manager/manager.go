@@ -69,16 +69,16 @@ func (m *Manager) DataSaveToFile() error {
 	return nil
 }
 
-func (m *Manager) FindRecord(records []*timet.Record, name string) *timet.Record {
+func (m *Manager) FindRecord(records []timet.Record, name string) *timet.Record {
 	recordIndex := m.FindRecordIndex(records, name)
 	if recordIndex == -1 {
 		return nil
 	}
 	record := records[recordIndex]
-	return record
+	return &record
 }
 
-func (m *Manager) FindRecordIndex(records []*timet.Record, name string) int {
+func (m *Manager) FindRecordIndex(records []timet.Record, name string) int {
 	for i, v := range records {
 		if glob.MustCompile(name).Match(v.Name) {
 			return i
@@ -87,8 +87,8 @@ func (m *Manager) FindRecordIndex(records []*timet.Record, name string) int {
 	return -1
 }
 
-func (m *Manager) FindRecordAll(records []*timet.Record, name string) []*timet.Record {
-	result := []*timet.Record{}
+func (m *Manager) FindRecordAll(records []timet.Record, name string) []timet.Record {
+	result := []timet.Record{}
 	for _, v := range records {
 		if glob.MustCompile(name).Match(v.Name) {
 			result = append(result, v)
@@ -108,7 +108,11 @@ func (m *Manager) List(name string) (string, error) {
 	if len(recordsF) == 0 {
 		return "", errors.New(messageNoMatches)
 	}
-	return timet.String(timet.MakeRecordActedList(m.Data.Records))
+	rows := make([]timet.IRowFormatable, len(recordsF))
+	for i, v := range recordsF {
+		rows[i] = &v
+	}
+	return timet.String(rows)
 }
 
 func (m *Manager) Create(name string, date string, below bool) (string, error) {
@@ -131,20 +135,24 @@ func (m *Manager) Create(name string, date string, below bool) (string, error) {
 	}
 	record := timet.MakeRecord(name, recordTime)
 	if below {
-		m.Data.Records = append(m.Data.Records, record)
+		m.Data.Records = append(m.Data.Records, *record)
 	} else {
-		m.Data.Records = append([]*timet.Record{record}, m.Data.Records...)
+		m.Data.Records = append([]timet.Record{*record}, m.Data.Records...)
 	}
 	m.DataSaveToFile()
 	recordsFm := timet.MakeRecordActedList(m.Data.Records)
-	var recordFm *timet.RecordActed
+	var recordFm timet.RecordActed
 	if below {
 		recordFm = recordsFm[len(recordsFm)-1]
 	} else {
 		recordFm = recordsFm[0]
 	}
 	recordFm.Action = timet.RecordActionAdded
-	return timet.String(recordsFm)
+	rows := make([]timet.IRowFormatable, len(recordsFm))
+	for i, v := range recordsFm {
+		rows[i] = &v
+	}
+	return timet.String(rows)
 }
 
 func (m *Manager) Remove(name string) (string, error) {
@@ -171,7 +179,11 @@ func (m *Manager) Remove(name string) (string, error) {
 		counterRm++
 	}
 	m.DataSaveToFile()
-	return timet.String(recordsFm)
+	rows := make([]timet.IRowFormatable, len(recordsFm))
+	for i, v := range recordsFm {
+		rows[i] = &v
+	}
+	return timet.String(rows)
 }
 
 func (m *Manager) Reset() (string, error) {
