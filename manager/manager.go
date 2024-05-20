@@ -103,8 +103,8 @@ func (m *Manager) DataSaveToFile() error {
 	return nil
 }
 
-func (m *Manager) FindRecord(records []timet.Record, name string) *timet.Record {
-	recordIndex := m.FindRecordIndex(records, name)
+func FindRecord(records []timet.Record, name string) *timet.Record {
+	recordIndex := FindRecordIndex(records, name)
 	if recordIndex == -1 {
 		return nil
 	}
@@ -112,7 +112,7 @@ func (m *Manager) FindRecord(records []timet.Record, name string) *timet.Record 
 	return &record
 }
 
-func (m *Manager) FindRecordIndex(records []timet.Record, name string) int {
+func FindRecordIndex(records []timet.Record, name string) int {
 	for i, v := range records {
 		if glob.MustCompile(name).Match(v.Name) {
 			return i
@@ -121,7 +121,7 @@ func (m *Manager) FindRecordIndex(records []timet.Record, name string) int {
 	return -1
 }
 
-func (m *Manager) FindRecordAll(records []timet.Record, name string) []timet.Record {
+func FindRecordAll(records []timet.Record, name string) []timet.Record {
 	result := []timet.Record{}
 	for _, v := range records {
 		if glob.MustCompile(name).Match(v.Name) {
@@ -138,7 +138,7 @@ func (m *Manager) List(name string) (string, error) {
 	if name == "" {
 		name = "**"
 	}
-	recordsF := m.FindRecordAll(m.Data.Records, name)
+	recordsF := FindRecordAll(m.Data.Records, name)
 	if len(recordsF) == 0 {
 		return "", errors.New(messageNoMatches)
 	}
@@ -163,7 +163,7 @@ func (m *Manager) Create(name string, date string, below bool) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	similar := m.FindRecord(m.Data.Records, name)
+	similar := FindRecord(m.Data.Records, name)
 	if similar != nil {
 		return "", errors.New(messageExistsName)
 	}
@@ -201,14 +201,14 @@ func (m *Manager) Remove(name string) (string, error) {
 	if name == "" {
 		name = "**"
 	}
-	similar := m.FindRecord(m.Data.Records, name)
+	similar := FindRecord(m.Data.Records, name)
 	if similar == nil {
 		return "", errors.New(messageNoMatches)
 	}
 	recordsFm := timet.MakeRecordActedList(m.Data.Records)
 	var counterRm = 0 // needed for right painting
 	for {
-		recordIndexRm := m.FindRecordIndex(m.Data.Records, name)
+		recordIndexRm := FindRecordIndex(m.Data.Records, name)
 		if recordIndexRm < 0 {
 			break
 		}
