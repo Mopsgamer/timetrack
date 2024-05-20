@@ -35,27 +35,29 @@ type ManagerObserver struct {
 	onReset  func()
 }
 
-func (ob *ManagerObserver) Follow(m *Manager) {
+func (ob *ManagerObserver) Follow(m *Manager) bool {
 	if ob.IsFollowed(m) {
-		return
+		return false
 	}
-	m.observers = append(m.observers, *ob)
+	m.observers = append(m.observers, ob)
+	return true
 }
 
-func (ob *ManagerObserver) Unfollow(m *Manager) {
+func (ob *ManagerObserver) Unfollow(m *Manager) bool {
 	obListLen := len(m.observers)
 	for i, observer := range m.observers {
-		if ob == &observer {
+		if ob == observer {
 			m.observers[obListLen-1], m.observers[i] = m.observers[i], m.observers[obListLen-1]
 			m.observers = m.observers[:obListLen-1]
-			return
+			return true
 		}
 	}
+	return false
 }
 
 func (ob *ManagerObserver) IsFollowed(m *Manager) bool {
 	for _, observer := range m.observers {
-		if ob == &observer {
+		if ob == observer {
 			return true
 		}
 	}
@@ -63,7 +65,7 @@ func (ob *ManagerObserver) IsFollowed(m *Manager) bool {
 }
 
 type Manager struct {
-	observers []ManagerObserver
+	observers []*ManagerObserver
 	Path      string
 	Data      timet.Data
 }
@@ -176,7 +178,9 @@ func (m *Manager) Create(name string, date string, below bool) (string, error) {
 		m.Data.Records = append([]timet.Record{record}, m.Data.Records...)
 	}
 	for _, ob := range m.observers {
-		ob.onCreate(record, recordIndex)
+		if ob.onCreate != nil {
+			ob.onCreate(record, recordIndex)
+		}
 	}
 	defer m.DataSaveToFile()
 	recordsFm := timet.MakeRecordActedList(m.Data.Records)
@@ -218,7 +222,9 @@ func (m *Manager) Remove(name string) (string, error) {
 		m.Data.Records = append(m.Data.Records[:recordIndexRm], m.Data.Records[recordIndexRm+1:]...)
 		counterRm++
 		for _, ob := range m.observers {
-			ob.onRemove(recordRm, recordIndexRm)
+			if ob.onRemove != nil {
+				ob.onRemove(recordRm, recordIndexRm)
+			}
 		}
 	}
 	defer m.DataSaveToFile()
@@ -232,7 +238,9 @@ func (m *Manager) Remove(name string) (string, error) {
 func (m *Manager) Reset() (string, error) {
 	m.Data = timet.DefaultData
 	for _, ob := range m.observers {
-		ob.onReset()
+		if ob.onReset != nil {
+			ob.onReset()
+		}
 	}
 	defer m.DataSaveToFile()
 	return "reset completed", nil

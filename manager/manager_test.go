@@ -14,6 +14,15 @@ import (
 
 func TestManager(t *testing.T) {
 	check := assert.New(t)
+	t.Run("Observer", func(t *testing.T) {
+		m := New("")
+		obCreate := ManagerObserver{onCreate: func(timet.Record, int) {}}
+		check.False(obCreate.IsFollowed(m))
+		obCreate.Follow(m)
+		check.True(obCreate.IsFollowed(m))
+		obCreate.Unfollow(m)
+		check.False(obCreate.IsFollowed(m))
+	})
 	t.Run("Data", func(t *testing.T) {
 		t.Run("\"\" Manager", func(t *testing.T) {
 			m := New("")
