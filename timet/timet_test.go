@@ -12,6 +12,20 @@ import (
 
 func TestTimet(t *testing.T) {
 	check := assert.New(t)
+	t.Run("Cloning", func(t *testing.T) {
+		check.NotPanics(func() {
+			data := Data{}
+			data.Clone()
+			data = Data{Records: []Record{*MakeRecord("test", time.Now())}}
+			data.Clone()
+			record := Record{}
+			record.Clone()
+			recordAc := RecordActed{}
+			recordAc.Clone()
+			recordFm := RecordFormat{}
+			recordFm.Clone()
+		})
+	})
 	t.Run("MakeRecord", func(t *testing.T) {
 		now := time.Now()
 		record := MakeRecord("", now)
