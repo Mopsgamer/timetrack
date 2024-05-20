@@ -90,7 +90,7 @@ func MakeRecordActedList(records []Record) []RecordActed {
 
 func (data *Data) Clone() Data {
 	clone := Data{}
-	cloneRecords := []Record{}
+	cloneRecords := make([]Record, len(data.Records))
 	for i, v := range data.Records {
 		cloneRecords[i] = v.Clone()
 	}
