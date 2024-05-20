@@ -184,13 +184,8 @@ func (m *Manager) Create(name string, date string, below bool) (string, error) {
 	}
 	defer m.DataSaveToFile()
 	recordsFm := timet.MakeRecordActedList(m.Data.Records)
-	var recordFm timet.RecordActed
-	if below {
-		recordFm = recordsFm[len(recordsFm)-1]
-	} else {
-		recordFm = recordsFm[0]
-	}
-	recordFm.Action = timet.RecordActionAdded
+	recordsFm[recordIndex].Action = timet.RecordActionAdded
+
 	rows := make([]timet.IRowFormatable, len(recordsFm))
 	for i, v := range recordsFm {
 		rows[i] = &v
