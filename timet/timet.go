@@ -44,7 +44,7 @@ type Record struct {
 }
 
 type RecordActed struct {
-	*Record
+	record *Record
 	Action string
 }
 
@@ -83,7 +83,7 @@ func MakeRecord(name string, time time.Time) *Record {
 func MakeRecordActedList(records []Record) []RecordActed {
 	recordsFm := make([]RecordActed, len(records))
 	for reci, rec := range records {
-		recordsFm[reci] = RecordActed{Record: &rec, Action: rec.GetAction()}
+		recordsFm[reci] = RecordActed{record: &rec, Action: rec.GetAction()}
 	}
 	return recordsFm
 }
@@ -107,7 +107,7 @@ func (record *RecordActed) GetAction() string {
 }
 
 func (record *RecordActed) Clone() RecordActed {
-	return RecordActed{Record: record.Record, Action: record.Action}
+	return RecordActed{record: record.record, Action: record.Action}
 }
 
 func (record *Record) GetAction() string {
@@ -126,17 +126,15 @@ func (record *Record) Format(recordIndex int) *RecordFormat {
 	if errRecordDate != nil {
 		return nil
 	}
-	colorize := MakeColorizer(record.GetAction())
 	var index string
 	if recordIndex < 0 {
 		index = "x"
 	} else {
 		index = fmt.Sprint(recordIndex)
 	}
-	index = colorize(index)
-	name := colorize(record.Name)
-	since := colorize(fmt.Sprintf("%v", time.Since(recordDate)))
-	date := colorize(recordDate.Format(DateFormatReadable))
+	name := record.Name
+	since := fmt.Sprintf("%v", time.Since(recordDate))
+	date := recordDate.Format(DateFormatReadable)
 
 	return &RecordFormat{
 		Index: index,
@@ -144,6 +142,16 @@ func (record *Record) Format(recordIndex int) *RecordFormat {
 		Since: since,
 		Date:  date,
 	}
+}
+
+func (recordColored *RecordActed) Format(recordIndex int) *RecordFormat {
+	format := recordColored.record.Format(recordIndex)
+	colorize := MakeColorizer(recordColored.GetAction())
+	format.Index = colorize(format.Index)
+	format.Date = colorize(format.Date)
+	format.Name = colorize(format.Name)
+	format.Since = colorize(format.Since)
+	return format
 }
 
 func ParseFile(path string) (Data, error) {
