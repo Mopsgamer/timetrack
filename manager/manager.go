@@ -231,9 +231,9 @@ func (m *Manager) Remove(name string) (string, error) {
 
 func (m *Manager) Reset() (string, error) {
 	m.Data = timet.DefaultData
-	defer m.DataSaveToFile()
 	for _, ob := range m.observers {
 		ob.onReset()
 	}
+	defer m.DataSaveToFile()
 	return "reset completed", nil
 }
