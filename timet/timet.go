@@ -88,12 +88,34 @@ func MakeRecordActedList(records []Record) []RecordActed {
 	return recordsFm
 }
 
+func (data *Data) Clone() Data {
+	clone := Data{}
+	cloneRecords := []Record{}
+	for i, v := range data.Records {
+		cloneRecords[i] = v.Clone()
+	}
+	clone.Records = append(clone.Records, cloneRecords...)
+	return clone
+}
+
+func (format *RecordFormat) Clone() RecordFormat {
+	return RecordFormat{Index: format.Index, Name: format.Name, Since: format.Since, Date: format.Date}
+}
+
 func (record *RecordActed) GetAction() string {
 	return record.Action
 }
 
+func (record *RecordActed) Clone() RecordActed {
+	return RecordActed{Record: record.Record, Action: record.Action}
+}
+
 func (record *Record) GetAction() string {
 	return RecordActionNormal
+}
+
+func (record *Record) Clone() Record {
+	return Record{Name: record.Name, Since: record.Since}
 }
 
 func (record *Record) Format(recordIndex int) *RecordFormat {
