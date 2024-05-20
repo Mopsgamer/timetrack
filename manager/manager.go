@@ -29,9 +29,43 @@ var (
 	// }
 )
 
+type ManagerObserver struct {
+	onCreate func(record timet.Record, recordIndex int)
+	onRemove func(record timet.Record, recordIndex int)
+	onReset  func()
+}
+
+func (ob *ManagerObserver) Follow(m *Manager) {
+	if ob.IsFollowed(m) {
+		return
+	}
+	m.observers = append(m.observers, *ob)
+}
+
+func (ob *ManagerObserver) Unfollow(m *Manager) {
+	obListLen := len(m.observers)
+	for i, observer := range m.observers {
+		if ob == &observer {
+			m.observers[obListLen-1], m.observers[i] = m.observers[i], m.observers[obListLen-1]
+			m.observers = m.observers[:obListLen-1]
+			return
+		}
+	}
+}
+
+func (ob *ManagerObserver) IsFollowed(m *Manager) bool {
+	for _, observer := range m.observers {
+		if ob == &observer {
+			return true
+		}
+	}
+	return false
+}
+
 type Manager struct {
-	Path string
-	Data timet.Data
+	observers []ManagerObserver
+	Path      string
+	Data      timet.Data
 }
 
 func New(path string) *Manager {
@@ -133,13 +167,18 @@ func (m *Manager) Create(name string, date string, below bool) (string, error) {
 	if similar != nil {
 		return "", errors.New(messageExistsName)
 	}
-	record := timet.MakeRecord(name, recordTime)
+	record := *timet.MakeRecord(name, recordTime)
+	recordIndex := 0
 	if below {
-		m.Data.Records = append(m.Data.Records, *record)
+		m.Data.Records = append(m.Data.Records, record)
 	} else {
-		m.Data.Records = append([]timet.Record{*record}, m.Data.Records...)
+		recordIndex = len(m.Data.Records)
+		m.Data.Records = append([]timet.Record{record}, m.Data.Records...)
 	}
-	m.DataSaveToFile()
+	for _, ob := range m.observers {
+		ob.onCreate(record, recordIndex)
+	}
+	defer m.DataSaveToFile()
 	recordsFm := timet.MakeRecordActedList(m.Data.Records)
 	var recordFm timet.RecordActed
 	if below {
@@ -173,12 +212,16 @@ func (m *Manager) Remove(name string) (string, error) {
 		if recordIndexRm < 0 {
 			break
 		}
+		recordRm := m.Data.Records[recordIndexRm]
 		recordsFm[recordIndexRm+counterRm].Action = timet.RecordActionDeleted
 		// remove el by index (recordIndexRm)
 		m.Data.Records = append(m.Data.Records[:recordIndexRm], m.Data.Records[recordIndexRm+1:]...)
 		counterRm++
+		for _, ob := range m.observers {
+			ob.onRemove(recordRm, recordIndexRm)
+		}
 	}
-	m.DataSaveToFile()
+	defer m.DataSaveToFile()
 	rows := make([]timet.IRowFormatable, len(recordsFm))
 	for i, v := range recordsFm {
 		rows[i] = &v
@@ -188,11 +231,9 @@ func (m *Manager) Remove(name string) (string, error) {
 
 func (m *Manager) Reset() (string, error) {
 	m.Data = timet.DefaultData
-	if m.Path != "" {
-		err := m.DataSaveToFile()
-		if err != nil {
-			return "", err
-		}
+	defer m.DataSaveToFile()
+	for _, ob := range m.observers {
+		ob.onReset()
 	}
 	return "reset completed", nil
 }
