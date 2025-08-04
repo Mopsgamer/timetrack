@@ -61,8 +61,8 @@ func (state *State) SearchItems() {
 SetCurrent:
 	if len(state.ItemsFound) > 0 {
 		state.ItemFound = 0
+		state.Item = slices.Index(state.Items, state.ItemsFound[state.ItemFound])
 	}
-	state.Item = slices.Index(state.Items, state.ItemsFound[state.ItemFound])
 }
 
 var homedir, _ = os.UserHomeDir()
