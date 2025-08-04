@@ -20,16 +20,7 @@ func handleEvent(screen tcell.Screen, state *State) {
 		}
 		switch state.Window {
 		case StateSearch:
-			handleInput(tev, state.SearchContent,
-				func(text string) {
-					state.SearchContent = text
-					state.SearchItems()
-					redraw(screen, *state)
-				},
-				func() {
-					state.Window = StateList
-				},
-			)
+			state.InputSearch.HandleInput(tev)
 			return
 		case StateNew:
 			switch tev.Key() {
@@ -43,14 +34,7 @@ func handleEvent(screen tcell.Screen, state *State) {
 				state.NewItem.Name = ""
 				save(*state)
 			default:
-				handleInput(tev, state.NewItem.Name,
-					func(text string) {
-						state.NewItem.Name = text
-					},
-					func() {
-						state.Window = StateList
-					},
-				)
+				state.InputNew.HandleInput(tev)
 			}
 			return
 		case StateList, StateHelp:
@@ -62,8 +46,7 @@ func handleEvent(screen tcell.Screen, state *State) {
 				case StateHelp:
 					state.Window = StateList
 				}
-				redraw(screen, *state)
-				return
+				goto Redraw
 			case 'q':
 				screen.Fini()
 				os.Exit(0)
@@ -71,7 +54,7 @@ func handleEvent(screen tcell.Screen, state *State) {
 			case '/':
 				state.Window = StateSearch
 				redraw(screen, *state)
-				return
+				goto Redraw
 			case 'd':
 				if len(state.ItemsFound) > 0 {
 					state.Items = slices.Delete(state.Items, state.Item, state.Item+1)
@@ -79,7 +62,7 @@ func handleEvent(screen tcell.Screen, state *State) {
 					redraw(screen, *state)
 				}
 				save(*state)
-				return
+				goto Redraw
 			case 'D':
 				for _, item := range state.ItemsFound {
 					index := slices.Index(state.Items, item)
@@ -88,11 +71,11 @@ func handleEvent(screen tcell.Screen, state *State) {
 				state.SearchContent = ""
 				state.SearchItems()
 				save(*state)
-				return
+				goto Redraw
 			case 'a':
 				state.Window = StateNew
 				redraw(screen, *state)
-				return
+				goto Redraw
 			}
 			switch tev.Key() {
 			case tcell.KeyEsc, tcell.KeyCtrlC:
@@ -106,11 +89,15 @@ func handleEvent(screen tcell.Screen, state *State) {
 				return
 			case tcell.KeyUp:
 				state.UpdateSelected(state.ItemFound - 1)
+				goto Redraw
 			case tcell.KeyDown:
 				state.UpdateSelected(state.ItemFound + 1)
+				goto Redraw
 			case tcell.KeyTab, tcell.KeyCtrlF:
 				state.Window = StateSearch
+				goto Redraw
 			}
+		Redraw:
 			redraw(screen, *state)
 			return
 		}
