@@ -162,7 +162,7 @@ func main() {
 	}
 	defer screen.Fini()
 
-	state := State{Items: []Item{{Name: "a", Since: time.Now()}, {Name: "b"}, {Name: "c"}, {Name: "d"}}}
+	state := State{}
 	state.SearchItems()
 	redraw(screen, state)
 
@@ -195,6 +195,14 @@ func main() {
 					},
 				)
 			case StateNew:
+				switch tev.Key() {
+				case tcell.KeyEnter:
+					state.NewItem.Since = time.Now()
+					state.Items = append(state.Items, state.NewItem)
+					state.SearchItems()
+					redraw(screen, state)
+					state.NewItem.Name = ""
+				}
 				handleInput(screen, state.NewItem.Name, tev,
 					func(text string) {
 						state.NewItem.Name = text
