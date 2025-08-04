@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
@@ -20,18 +21,18 @@ const (
 )
 
 type Item struct {
-	Name     string
-	Selected bool
-	Since    time.Time
+	Name  string
+	Since time.Time
 }
 
 type State struct {
-	Window        Window
-	Items         []Item
-	ItemsFound    []*Item
-	ItemCursor    *Item
-	SearchContent string
-	NewItem       Item
+	Window        Window `json:"-"`
+	Items         []*Item
+	ItemsFound    []*Item `json:"-"`
+	ItemFound     int     `json:"-"`
+	Item          int     `json:"-"`
+	SearchContent string  `json:"-"`
+	NewItem       Item    `json:"-"`
 }
 
 func (state *State) SearchRegexp() (*regexp.Regexp, error) {
@@ -44,32 +45,31 @@ func (state *State) SearchRegexp() (*regexp.Regexp, error) {
 func (state *State) SearchItems() {
 	state.ItemsFound = []*Item{}
 	rg, err := state.SearchRegexp()
-	state.ItemCursor = nil
+	state.ItemFound = -1
+	state.Item = -1
 	if state.SearchContent == "" || err != nil {
 		for i := range state.Items {
-			state.ItemsFound = append(state.ItemsFound, &state.Items[i])
+			state.ItemsFound = append(state.ItemsFound, state.Items[i])
 		}
-		goto SetCursor
+		goto SetCurrent
 	}
 	for i := range state.Items {
 		if rg.MatchString(state.Items[i].Name) {
-			state.ItemsFound = append(state.ItemsFound, &state.Items[i])
+			state.ItemsFound = append(state.ItemsFound, state.Items[i])
 		}
 	}
-SetCursor:
+SetCurrent:
 	if len(state.ItemsFound) > 0 {
-		state.ItemCursor = state.ItemsFound[0]
+		state.ItemFound = 0
 	}
+	state.Item = slices.Index(state.Items, state.ItemsFound[state.ItemFound])
 }
 
 var homedir, _ = os.UserHomeDir()
 var path = filepath.Join(homedir, ".timetrack.json")
 
 func save(state State) {
-	neededState := State{
-		Items: state.Items,
-	}
-	bytes, err := json.Marshal(neededState)
+	bytes, err := json.Marshal(state)
 	if err != nil {
 		panic(err)
 	}
@@ -128,23 +128,15 @@ func redraw(screen tcell.Screen, state State) {
 	case StateList:
 		screen.HideCursor()
 	}
-	for i, item := range state.ItemsFound {
-		style := tcell.StyleDefault.Foreground(tcell.ColorWhite)
-		if item.Selected {
-			style = tcell.StyleDefault.Foreground(tcell.ColorBlack).Background(tcell.ColorGhostWhite)
-		}
-		if item == state.ItemCursor {
-			style = style.Underline(true)
-		}
-		drawText(screen, 2, i+1, item.Name, style)
-		drawTextRight(screen, w-1, i+1, time.Since(item.Since).Round(time.Second).String(), style)
-	}
 
 	top := 0
 	bottom := h - 1
 	if state.Window == StateSearch || state.Window == StateNew {
 		bottom = h - 2
 	}
+
+	drawItems(screen, state.ItemsFound, state.ItemFound, true, tcell.WindowSize{PixelWidth: w - 2, PixelHeight: bottom - 1, Height: 1, Width: 2})
+
 	for x := range w {
 		screen.SetContent(x, top, '─', nil, tcell.StyleDefault.Foreground(tcell.ColorWhite))
 		screen.SetContent(x, bottom, '━', nil, tcell.StyleDefault.Foreground(tcell.ColorWhite))
@@ -161,7 +153,7 @@ func redraw(screen tcell.Screen, state State) {
 	screen.Show()
 }
 
-func handleInput(screen tcell.Screen, str string, tev *tcell.EventKey, onInput func(text string), onEscape func()) {
+func handleInput(tev *tcell.EventKey, str string, onInput func(text string), onEscape func()) {
 	switch tev.Key() {
 	case tcell.KeyEsc:
 		onInput("")
@@ -179,6 +171,29 @@ func handleInput(screen tcell.Screen, str string, tev *tcell.EventKey, onInput f
 			str += string(tev.Rune())
 			onInput(str)
 		}
+	}
+}
+
+func drawItems(screen tcell.Screen, items []*Item, current int, highlight bool, size tcell.WindowSize) {
+	half := size.PixelHeight / 2
+	from, to := 0, len(items)
+	if current > half {
+		if current > len(items)-half {
+			from, to = len(items)-size.PixelHeight, len(items)
+		} else {
+			from, to = current-half-1, current+half
+		}
+	}
+
+	for i, item := range items[from:to] {
+		style := tcell.StyleDefault.Foreground(tcell.ColorWhite)
+		since := time.Since(item.Since).Round(time.Second).String()
+		if highlight && item == items[current] {
+			style = tcell.StyleDefault.Foreground(tcell.ColorBlack).Background(tcell.ColorGhostWhite)
+			drawText(screen, size.Width+len(item.Name), i+size.Height, strings.Repeat(" ", size.PixelWidth-size.Width-len(item.Name)-len(since)), style)
+		}
+		drawText(screen, size.Width, i+size.Height, item.Name, style)
+		drawTextRight(screen, size.PixelWidth-size.Width+1, i+size.Height, since, style)
 	}
 }
 
@@ -215,7 +230,7 @@ func main() {
 			}
 			switch state.Window {
 			case StateSearch:
-				handleInput(screen, state.SearchContent, tev,
+				handleInput(tev, state.SearchContent,
 					func(text string) {
 						state.SearchContent = text
 						state.SearchItems()
@@ -229,20 +244,23 @@ func main() {
 				switch tev.Key() {
 				case tcell.KeyEnter:
 					state.NewItem.Since = time.Now()
-					state.Items = append(state.Items, state.NewItem)
+					newItem := state.NewItem
+					state.Items = append(state.Items, &newItem)
+					state.Window = StateList
 					state.SearchItems()
 					redraw(screen, state)
 					state.NewItem.Name = ""
 					save(state)
+				default:
+					handleInput(tev, state.NewItem.Name,
+						func(text string) {
+							state.NewItem.Name = text
+						},
+						func() {
+							state.Window = StateList
+						},
+					)
 				}
-				handleInput(screen, state.NewItem.Name, tev,
-					func(text string) {
-						state.NewItem.Name = text
-					},
-					func() {
-						state.Window = StateList
-					},
-				)
 			case StateList:
 				switch tev.Rune() {
 				case 'q':
@@ -253,11 +271,18 @@ func main() {
 					redraw(screen, state)
 				case 'd':
 					if len(state.ItemsFound) > 0 {
-						index := slices.Index(state.Items, *state.ItemCursor)
-						state.Items = slices.Delete(state.Items, index, index+1)
+						state.Items = slices.Delete(state.Items, state.Item, state.Item+1)
 						state.SearchItems()
 						redraw(screen, state)
 					}
+					save(state)
+				case 'D':
+					for _, item := range state.ItemsFound {
+						index := slices.Index(state.Items, item)
+						state.Items = slices.Delete(state.Items, index, index+1)
+					}
+					state.SearchContent = ""
+					state.SearchItems()
 					save(state)
 				case 'a':
 					state.Window = StateNew
@@ -267,15 +292,15 @@ func main() {
 					screen.Fini()
 					os.Exit(0)
 				case tcell.KeyUp:
-					newIndex := slices.Index(state.ItemsFound, state.ItemCursor) - 1
+					newIndex := state.ItemFound - 1
 					if newIndex >= 0 {
-						state.ItemCursor = state.ItemsFound[newIndex]
+						state.ItemFound = newIndex
 					}
 					redraw(screen, state)
 				case tcell.KeyDown:
-					newIndex := slices.Index(state.ItemsFound, state.ItemCursor) + 1
+					newIndex := state.ItemFound + 1
 					if newIndex < len(state.ItemsFound) {
-						state.ItemCursor = state.ItemsFound[newIndex]
+						state.ItemFound = newIndex
 					}
 					redraw(screen, state)
 				case tcell.KeyTab, tcell.KeyCtrlF:
