@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"os"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"time"
@@ -58,6 +60,34 @@ SetCursor:
 	if len(state.ItemsFound) > 0 {
 		state.ItemCursor = state.ItemsFound[0]
 	}
+}
+
+var homedir, _ = os.UserHomeDir()
+var path = filepath.Join(homedir, ".timetrack.json")
+
+func save(state State) {
+	neededState := State{
+		Items: state.Items,
+	}
+	bytes, err := json.Marshal(neededState)
+	if err != nil {
+		panic(err)
+	}
+	os.WriteFile(path, bytes, 0666)
+}
+
+func load(state *State) {
+	bytes, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return
+		}
+		panic(err)
+	}
+	if err := json.Unmarshal(bytes, state); err != nil {
+		panic(err)
+	}
+	state.SearchItems()
 }
 
 func drawText(screen tcell.Screen, x, y int, text string, style tcell.Style) {
@@ -163,6 +193,7 @@ func main() {
 	defer screen.Fini()
 
 	state := State{}
+	load(&state)
 	state.SearchItems()
 	redraw(screen, state)
 
@@ -202,6 +233,7 @@ func main() {
 					state.SearchItems()
 					redraw(screen, state)
 					state.NewItem.Name = ""
+					save(state)
 				}
 				handleInput(screen, state.NewItem.Name, tev,
 					func(text string) {
@@ -226,6 +258,7 @@ func main() {
 						state.SearchItems()
 						redraw(screen, state)
 					}
+					save(state)
 				case 'a':
 					state.Window = StateNew
 				}
