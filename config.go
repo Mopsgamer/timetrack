@@ -21,6 +21,7 @@ func load(state *State) {
 	bytes, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
+			save(*state)
 			return
 		}
 		panic(err)
