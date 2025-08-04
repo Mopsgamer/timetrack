@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"regexp"
 	"slices"
 
@@ -70,6 +71,15 @@ func (state *State) SearchItems() {
 	state.UpdateSelected(0)
 }
 
+const help = "Welcome to timetrack!\n" +
+	"This screen available through <?> and <h> keys.\n\n" +
+	"Use ▲ and ▼ to move.\n" +
+	"<C-c>, <q>, <esc> - quit\n" +
+	"<a> - add new record\n" +
+	"<d> - delete current record\n" +
+	"<C-f>, </> - search records\n" +
+	"<D> - delete all found records"
+
 func redraw(screen tcell.Screen, state State) {
 	screen.Clear()
 	w, h := screen.Size()
@@ -79,14 +89,6 @@ func redraw(screen tcell.Screen, state State) {
 	if state.Window == StateSearch || state.Window == StateNew {
 		listBox.PixelHeight = h - 3
 	}
-
-	help := "Welcome to timetrack!\n" +
-		"This screen available through <?> and <h> keys.\n\n" +
-		"<q>, <esc> - quit\n" +
-		"<a> - add new record\n" +
-		"<d> - delete current record\n" +
-		"<C-f>, </> - search records\n" +
-		"<D> - delete all found records"
 
 	switch state.Window {
 	case StateSearch:
@@ -138,6 +140,11 @@ func redraw(screen tcell.Screen, state State) {
 }
 
 func main() {
+	if slices.Contains(os.Args, "--help") || slices.Contains(os.Args, "-h") {
+		println(help)
+		os.Exit(1)
+		return
+	}
 	screen, err := tcell.NewScreen()
 	if err != nil {
 		println(err)
