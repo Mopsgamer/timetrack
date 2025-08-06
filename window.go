@@ -7,4 +7,5 @@ const (
 	StateList
 	StateSearch
 	StateNew
+	StateRename
 )

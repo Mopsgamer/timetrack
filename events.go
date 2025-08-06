@@ -12,8 +12,7 @@ func handleEvent(screen tcell.Screen, state *State) {
 	ev := screen.PollEvent()
 	switch tev := ev.(type) {
 	case *tcell.EventKey:
-		switch tev.Key() {
-		case tcell.KeyCtrlC:
+		if tev.Key() == tcell.KeyCtrlC {
 			screen.Fini()
 			os.Exit(0)
 			return
@@ -21,31 +20,39 @@ func handleEvent(screen tcell.Screen, state *State) {
 		switch state.Window {
 		case StateSearch:
 			state.InputSearch.HandleInput(tev)
-			return
+			goto Redraw
 		case StateNew:
-			switch tev.Key() {
-			case tcell.KeyEnter:
-				state.NewItem.Since = time.Now()
-				newItem := state.NewItem
-				state.Items = append(state.Items, &newItem)
+			state.InputNew.HandleInput(tev)
+			goto Redraw
+		case StateRename:
+			state.InputRename.HandleInput(tev)
+			goto Redraw
+		case StateHelp:
+			switch tev.Rune() {
+			case 'h', '?', 'q':
 				state.Window = StateList
-				state.SearchItems()
-				redraw(screen, *state)
-				state.NewItem.Name = ""
-				save(*state)
-			default:
-				state.InputNew.HandleInput(tev)
+				goto Redraw
 			}
-			return
-		case StateList, StateHelp:
+			switch tev.Key() {
+			case tcell.KeyEsc:
+				state.Window = StateList
+				goto Redraw
+			case tcell.KeyUp:
+				if state.HelpScroll > 0 {
+					state.HelpScroll -= 1
+				}
+				goto Redraw
+			case tcell.KeyDown:
+				lines := len(splitTextIntoLines(help, listBox.PixelWidth))
+				if lines-state.HelpScroll-1 >= listBox.PixelHeight {
+					state.HelpScroll += 1
+				}
+				goto Redraw
+			}
+		case StateList:
 			switch tev.Rune() {
 			case 'h', '?':
-				switch state.Window {
-				case StateList:
-					state.Window = StateHelp
-				case StateHelp:
-					state.Window = StateList
-				}
+				state.Window = StateHelp
 				goto Redraw
 			case 'q':
 				screen.Fini()
@@ -53,14 +60,19 @@ func handleEvent(screen tcell.Screen, state *State) {
 				return
 			case '/':
 				state.Window = StateSearch
-				redraw(screen, *state)
+				goto Redraw
+			case 'a':
+				state.Window = StateNew
+				goto Redraw
+			case 'r':
+				state.Items[state.Item].Since = time.Now()
+				save(*state)
 				goto Redraw
 			case 'd':
 				if len(state.ItemsFound) > 0 {
 					state.Items = slices.Delete(state.Items, state.Item, state.Item+1)
-					state.SearchItems()
-					redraw(screen, *state)
 				}
+				state.SearchItems(state.ItemFound - 1)
 				save(*state)
 				goto Redraw
 			case 'D':
@@ -69,23 +81,17 @@ func handleEvent(screen tcell.Screen, state *State) {
 					state.Items = slices.Delete(state.Items, index, index+1)
 				}
 				state.SearchContent = ""
-				state.SearchItems()
+				state.SearchItems(0)
 				save(*state)
 				goto Redraw
-			case 'a':
-				state.Window = StateNew
-				redraw(screen, *state)
+			case 'A':
+				state.Window = StateRename
 				goto Redraw
 			}
 			switch tev.Key() {
-			case tcell.KeyEsc, tcell.KeyCtrlC:
-				switch state.Window {
-				case StateList:
-					screen.Fini()
-					os.Exit(0)
-				case StateHelp:
-					state.Window = StateList
-				}
+			case tcell.KeyEsc:
+				screen.Fini()
+				os.Exit(0)
 				return
 			case tcell.KeyUp:
 				state.UpdateSelected(state.ItemFound - 1)
@@ -97,11 +103,12 @@ func handleEvent(screen tcell.Screen, state *State) {
 				state.Window = StateSearch
 				goto Redraw
 			}
-		Redraw:
-			redraw(screen, *state)
-			return
 		}
 	case *tcell.EventResize:
-		redraw(screen, *state)
+		goto Redraw
+	default:
+		return
 	}
+Redraw:
+	redraw(screen, state)
 }

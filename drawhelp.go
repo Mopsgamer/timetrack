@@ -26,9 +26,9 @@ func splitTextIntoLines(text string, limitX int) []string {
 	return result
 }
 
-func drawParagraph(screen tcell.Screen, size tcell.WindowSize, text string, style tcell.Style) {
+func drawParagraph(screen tcell.Screen, size tcell.WindowSize, text string, scroll int, style tcell.Style) {
 	lines := splitTextIntoLines(text, size.PixelWidth)
-	lines = lines[:min(size.PixelHeight, len(lines))]
+	lines = lines[scroll : min(size.PixelHeight, len(lines))+scroll]
 	for i, line := range lines {
 		drawText(screen, size.Width, size.Height+i, line, style)
 	}

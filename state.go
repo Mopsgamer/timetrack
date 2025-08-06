@@ -8,14 +8,15 @@ import (
 
 type State struct {
 	Window        Window `json:"-"`
+	HelpScroll    int    `json:"-"`
 	Items         []*Item
 	ItemsFound    []*Item    `json:"-"`
 	ItemFound     int        `json:"-"`
 	Item          int        `json:"-"`
 	SearchContent string     `json:"-"`
-	NewItem       Item       `json:"-"`
 	InputSearch   InputState `json:"-"`
 	InputNew      InputState `json:"-"`
+	InputRename   InputState `json:"-"`
 }
 
 func LoadState(state *State) {
@@ -26,25 +27,42 @@ func LoadState(state *State) {
 
 	state.InputSearch = InputState{
 		Value: state.SearchContent,
-		OnInput: func(text string) {
+		OnChange: func(text string) {
 			state.SearchContent = text
-			state.SearchItems()
+			state.SearchItems(0)
 		},
 		OnEscape: func() {
 			state.Window = StateList
 		},
 	}
 	state.InputNew = InputState{
-		Value: state.SearchContent,
-		OnInput: func(text string) {
-			state.NewItem.Name = text
+		OnProceed: func(text string) {
+			newItem := Item{
+				Name:  text,
+				Since: time.Now(),
+			}
+			state.Items = append(state.Items, &newItem)
+			state.Window = StateList
+			state.SearchItems(0)
+			save(*state)
 		},
 		OnEscape: func() {
 			state.Window = StateList
 		},
 	}
+	state.InputRename = InputState{
+		OnProceed: func(text string) {
+			state.Items[state.Item].Name = state.InputRename.Value
+			save(*state)
+		},
+		OnEscape: func() {
+			state.InputRename.Value = ""
+			state.InputRename.Cursor = 0
+			state.Window = StateList
+		},
+	}
 
-	state.SearchItems()
+	state.SearchItems(0)
 }
 
 func (state *State) SearchRegexp() (*regexp.Regexp, error) {
@@ -64,7 +82,7 @@ func (state *State) UpdateSelected(foundIndex int) {
 	}
 }
 
-func (state *State) SearchItems() {
+func (state *State) SearchItems(foundItem int) {
 	state.ItemsFound = []*Item{}
 	rg, err := state.SearchRegexp()
 	state.ItemFound = -1
@@ -73,7 +91,7 @@ func (state *State) SearchItems() {
 		for i := range state.Items {
 			state.ItemsFound = append(state.ItemsFound, state.Items[i])
 		}
-		state.UpdateSelected(0)
+		state.UpdateSelected(foundItem)
 		return
 	}
 	for i := range state.Items {
@@ -81,5 +99,5 @@ func (state *State) SearchItems() {
 			state.ItemsFound = append(state.ItemsFound, state.Items[i])
 		}
 	}
-	state.UpdateSelected(0)
+	state.UpdateSelected(foundItem)
 }

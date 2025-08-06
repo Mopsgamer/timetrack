@@ -4,18 +4,18 @@ import (
 	"github.com/gdamore/tcell/v2"
 )
 
-func redraw(screen tcell.Screen, state State) {
+var listBox = tcell.WindowSize{}
+
+func redraw(screen tcell.Screen, state *State) {
 	screen.Clear()
 	w, h := screen.Size()
 	style := tcell.StyleDefault.Foreground(tcell.ColorWhite)
 
-	listBox := tcell.WindowSize{PixelWidth: w - 2, PixelHeight: h - 2, Height: 1, Width: 2}
-	if state.Window == StateSearch || state.Window == StateNew {
-		listBox.PixelHeight = h - 3
-	}
+	listBox = tcell.WindowSize{PixelWidth: w - 2, PixelHeight: h - 2, Height: 1, Width: 2}
 
 	switch state.Window {
 	case StateSearch:
+		listBox.PixelHeight = h - 3
 		x := 0
 		y := h - 1
 		label := "Search: /"
@@ -28,21 +28,30 @@ func redraw(screen tcell.Screen, state State) {
 		x = len(label) + state.InputSearch.Cursor
 		screen.ShowCursor(x, y)
 	case StateNew:
+		listBox.PixelHeight = h - 3
 		x := 0
 		y := h - 1
 		label := "New: "
-		drawText(screen, x, y, label+state.NewItem.Name, style)
+		drawText(screen, x, y, label+state.InputNew.Value, style)
 		x = len(label) + state.InputNew.Cursor
 		screen.ShowCursor(x, y)
+	case StateRename:
+		listBox.PixelHeight = h - 3
+		x := 0
+		y := h - 1
+		label := "Rename: "
+		drawText(screen, x, y, label+state.InputRename.Value, style)
+		x = len(label) + state.InputRename.Cursor
+		screen.ShowCursor(x, y)
 	case StateHelp:
-		drawParagraph(screen, listBox, help, style)
+		drawParagraph(screen, listBox, help, state.HelpScroll, style)
 		screen.HideCursor()
 	case StateList:
 		screen.HideCursor()
 	}
 
 	if len(state.ItemsFound) == 0 {
-		drawParagraph(screen, listBox, help, style)
+		drawParagraph(screen, listBox, help, state.HelpScroll, style)
 	} else if state.Window != StateHelp {
 		drawItems(screen, state.ItemsFound, state.ItemFound, true, listBox)
 	}

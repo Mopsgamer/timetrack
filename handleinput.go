@@ -7,11 +7,12 @@ import (
 )
 
 type InputState struct {
-	Value    string
-	Cursor   int
-	Max      int
-	OnInput  func(text string)
-	OnEscape func()
+	Value     string
+	Cursor    int
+	Max       int
+	OnChange  func(text string)
+	OnProceed func(text string)
+	OnEscape  func()
 }
 
 func (input *InputState) SetCursor(pos int) bool {
@@ -56,15 +57,25 @@ func jumpWord(input *InputState, inc int) {
 }
 
 func (input *InputState) HandleInput(tev *tcell.EventKey) {
-	onInput := func(text string) {
-		if input.OnInput != nil {
-			input.OnInput(text)
+	onChange := func(text string) {
+		if text == "" {
+			input.Cursor = 0
+		}
+		input.Value = text
+		if input.OnChange != nil {
+			input.OnChange(text)
 		}
 	}
 	onEscape := func() {
 		if input.OnEscape != nil {
 			input.OnEscape()
 		}
+	}
+	onProceed := func(text string) {
+		if input.OnProceed != nil {
+			input.OnProceed(text)
+		}
+		onChange("")
 	}
 	switch tev.Rune() {
 	case 'd':
@@ -77,17 +88,17 @@ func (input *InputState) HandleInput(tev *tcell.EventKey) {
 		input.Value = input.Value[:from] +
 			input.Value[to:]
 		input.SetCursor(from)
-		onInput(input.Value)
+		onChange(input.Value)
 		return
 	}
 	switch tev.Key() {
 	case tcell.KeyEsc:
 		input.SetCursor(0)
-		onInput("")
+		onChange("")
 		onEscape()
 	case tcell.KeyCtrlZ, tcell.KeyCtrlL:
 		input.SetCursor(0)
-		onInput("")
+		onChange("")
 	case tcell.KeyCtrlB:
 		input.SetCursor(input.Cursor - 1)
 	case tcell.KeyCtrlF:
@@ -98,7 +109,7 @@ func (input *InputState) HandleInput(tev *tcell.EventKey) {
 		from := input.Cursor
 		input.Value = input.Value[:from] +
 			input.Value[to:]
-		onInput(input.Value)
+		onChange(input.Value)
 	case tcell.KeyLeft:
 		if (tev.Modifiers() & tcell.ModCtrl) == 0 {
 			input.SetCursor(input.Cursor - 1)
@@ -111,8 +122,11 @@ func (input *InputState) HandleInput(tev *tcell.EventKey) {
 			break
 		}
 		jumpWord(input, +1)
-	case tcell.KeyTab, tcell.KeyEnter:
-		onInput(input.Value)
+	case tcell.KeyTab:
+		onChange(input.Value)
+		onEscape()
+	case tcell.KeyEnter:
+		onProceed(input.Value)
 		onEscape()
 	case tcell.KeyBackspace, tcell.KeyBackspace2:
 		if input.Cursor == 0 {
@@ -121,14 +135,14 @@ func (input *InputState) HandleInput(tev *tcell.EventKey) {
 		input.Value = input.Value[:input.Cursor-1] +
 			input.Value[input.Cursor:]
 		input.SetCursor(input.Cursor - 1)
-		onInput(input.Value)
+		onChange(input.Value)
 	case tcell.KeyDelete, tcell.KeyCtrlD:
 		if input.Cursor == len(input.Value) {
 			break
 		}
 		input.Value = input.Value[:input.Cursor] +
 			input.Value[input.Cursor+1:]
-		onInput(input.Value)
+		onChange(input.Value)
 	default:
 		if (input.Max > 0 && len(input.Value) >= input.Max) ||
 			tev.Rune() == 0 ||
@@ -140,6 +154,6 @@ func (input *InputState) HandleInput(tev *tcell.EventKey) {
 			char +
 			input.Value[input.Cursor:]
 		input.SetCursor(input.Cursor + 1)
-		onInput(input.Value)
+		onChange(input.Value)
 	}
 }

@@ -13,8 +13,11 @@ import (
 const help = "Welcome to timetrack!\n" +
 	"This screen available through <?> and <h> keys.\n\n" +
 	"Use ▲ and ▼ to move.\n" +
-	"<C-c>, <q>, <esc> - quit\n" +
+	"<C-c> - quit\n" +
+	"<q>, <esc> - back\n" +
 	"<a> - add new record\n" +
+	"<A> - rename record\n" +
+	"<r> - reset record time\n" +
 	"<d> - delete current record\n" +
 	"<C-f>, </> - search records\n" +
 	"<D> - delete all found records"
@@ -38,12 +41,12 @@ func main() {
 
 	state := new(State)
 	LoadState(state)
-	redraw(screen, *state)
+	redraw(screen, state)
 
 	go func() {
 		for {
 			time.Sleep(50 * time.Millisecond)
-			redraw(screen, *state)
+			redraw(screen, state)
 		}
 	}()
 

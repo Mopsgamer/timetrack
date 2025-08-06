@@ -29,5 +29,5 @@ func load(state *State) {
 	if err := json.Unmarshal(bytes, state); err != nil {
 		panic(err)
 	}
-	state.SearchItems()
+	state.SearchItems(0)
 }
