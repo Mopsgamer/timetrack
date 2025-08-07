@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"slices"
@@ -24,17 +25,19 @@ const help = "Welcome to timetrack!\n" +
 
 func main() {
 	if slices.Contains(os.Args, "--help") || slices.Contains(os.Args, "-h") {
-		println(help)
+		fmt.Println(help)
 		os.Exit(1)
 		return
 	}
 	screen, err := tcell.NewScreen()
 	if err != nil {
 		println(err)
+		os.Exit(1)
 		return
 	}
 	if err := screen.Init(); err != nil {
 		println(err)
+		os.Exit(1)
 		return
 	}
 	defer screen.Fini()
