@@ -7,6 +7,9 @@ import (
 
 func FormatSince(duration time.Duration) string {
 	seconds := int(duration.Seconds())
+	if seconds < 0 {
+		seconds = -seconds
+	}
 	minutes := seconds / 60
 	hours := minutes / 60
 	days := hours / 24
