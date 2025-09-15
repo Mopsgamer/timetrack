@@ -18,14 +18,24 @@ func drawItems(screen tcell.Screen, items []*Item, current int, highlight bool, 
 		}
 	}
 
-	for i, item := range items[from:to] {
+	i := 0
+	for _, item := range items[from:to] {
 		style := tcell.StyleDefault.Foreground(tcell.ColorWhite)
 		since := FormatSince(time.Since(item.Since))
-		if highlight && item == items[current] {
+		isCurrent := item == items[current]
+		if highlight && isCurrent {
 			style = tcell.StyleDefault.Foreground(tcell.ColorBlack).Background(tcell.ColorGhostWhite)
 			drawText(screen, size.Width+len(item.Name), i+size.Height, strings.Repeat(" ", max(0, size.PixelWidth-size.Width-len(item.Name)-len(since))), style)
 		}
+
 		drawText(screen, size.Width, i+size.Height, item.Name, style)
 		drawTextRight(screen, size.PixelWidth-size.Width+1, i+size.Height, since, style)
+		if isCurrent {
+			date := item.Since.Format("2006-01-02 15:04:05")
+			i += 1
+			drawText(screen, size.Width, i+size.Height, strings.Repeat(" ", max(0, size.PixelWidth-size.Width-len(date))), style)
+			drawTextRight(screen, size.PixelWidth-size.Width+1, i+size.Height, date, style)
+		}
+		i += 1
 	}
 }
