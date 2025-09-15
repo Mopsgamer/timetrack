@@ -16,7 +16,9 @@ func drawItems(screen tcell.Screen, items []*Item, current int, highlight bool, 
 		} else {
 			from, to = current-half-1, current+half
 		}
+		from += 1
 	}
+	from, to = max(0, from), min(len(items), to)
 
 	i := 0
 	for _, item := range items[from:to] {
