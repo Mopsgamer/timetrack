@@ -10,6 +10,7 @@ import (
 
 func handleEvent(screen tcell.Screen, state *State) {
 	ev := screen.PollEvent()
+	_, h := screen.Size()
 	switch tev := ev.(type) {
 	case *tcell.EventKey:
 		if tev.Key() == tcell.KeyCtrlC {
@@ -37,16 +38,19 @@ func handleEvent(screen tcell.Screen, state *State) {
 			case tcell.KeyEsc:
 				state.Window = StateList
 				goto Redraw
+			case tcell.KeyPgUp:
+				state.HelpScroll = max(0, state.HelpScroll-h)
+				goto Redraw
+			case tcell.KeyPgDn:
+				lines := len(splitTextIntoLines(help, listBox.PixelWidth))
+				state.HelpScroll = min(state.HelpScroll+h, max(0, lines-listBox.PixelHeight))
+				goto Redraw
 			case tcell.KeyUp:
-				if state.HelpScroll > 0 {
-					state.HelpScroll -= 1
-				}
+				state.HelpScroll = max(0, state.HelpScroll-1)
 				goto Redraw
 			case tcell.KeyDown:
 				lines := len(splitTextIntoLines(help, listBox.PixelWidth))
-				if lines-state.HelpScroll-1 >= listBox.PixelHeight {
-					state.HelpScroll += 1
-				}
+				state.HelpScroll = min(state.HelpScroll+1, max(0, lines-listBox.PixelHeight))
 				goto Redraw
 			}
 		case StateList:
@@ -93,6 +97,12 @@ func handleEvent(screen tcell.Screen, state *State) {
 				screen.Fini()
 				os.Exit(0)
 				return
+			case tcell.KeyPgUp:
+				state.UpdateSelected(state.ItemFound - h)
+				goto Redraw
+			case tcell.KeyPgDn:
+				state.UpdateSelected(state.ItemFound + h)
+				goto Redraw
 			case tcell.KeyUp:
 				state.UpdateSelected(state.ItemFound - 1)
 				goto Redraw

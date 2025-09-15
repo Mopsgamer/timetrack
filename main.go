@@ -13,7 +13,7 @@ import (
 
 const help = "Welcome to timetrack!\n" +
 	"This screen available through <?> and <h> keys.\n\n" +
-	"Use ▲ and ▼ to move.\n" +
+	"Use arrows, PGDN and PGUP to move.\n" +
 	"<C-c> - quit\n" +
 	"<q>, <esc> - back\n" +
 	"<a> - add new record\n" +

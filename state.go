@@ -73,9 +73,7 @@ func (state *State) SearchRegexp() (*regexp.Regexp, error) {
 }
 
 func (state *State) UpdateSelected(foundIndex int) {
-	if foundIndex < 0 || foundIndex >= len(state.ItemsFound) {
-		return
-	}
+	foundIndex = max(0, min(foundIndex, len(state.ItemsFound)-1))
 	if len(state.ItemsFound) > 0 {
 		state.ItemFound = foundIndex
 		state.Item = slices.Index(state.Items, state.ItemsFound[foundIndex])
